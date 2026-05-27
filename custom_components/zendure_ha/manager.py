@@ -77,7 +77,6 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
         self.charge_weight = 0
 
         self.discharge: list[ZendureDevice] = []
-        self.discharge_bypass = 0
         self.discharge_produced = 0
         self.discharge_limit = 0
         self.discharge_optimal = 0
@@ -397,7 +396,6 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
                 self.charge_optimal = 0
                 self.charge_weight = 0
                 self.discharge.clear()
-                self.discharge_bypass = 0
                 self.discharge_limit = 0
                 self.discharge_optimal = 0
                 self.discharge_produced = 0
@@ -441,12 +439,14 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
                 # SOCEMPTY means, it could not discharge the battery, but it is still possible to feed into the home using solarpower or offGrid
                 elif (home := d.homeOutput.asInt) > 0:
                     self.discharge.append(d)
-                    self.discharge_bypass -= d.pwr_produced if d.state == DeviceState.SOCFULL and d.exports_bypass else 0
                     self.discharge_limit += d.fuseGrp.discharge_limit(d)
                     self.discharge_optimal += d.discharge_optimal
                     self.discharge_produced -= d.pwr_produced
                     self.discharge_weight += d.pwr_max * d.electricLevel.asInt
-                    setpoint += home
+                    # SOCFULL devices only pass solar to home — don't credit their output
+                    # to setpoint or the solar will cancel out the charge deficit below.
+                    if d.state != DeviceState.SOCFULL or not d.exports_bypass:
+                        setpoint += home
 
                 else:
                     self.idle.append(d)
@@ -459,14 +459,6 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
         # Update the power entities
         self.power.update_value(power)
         self.availableKwh.update_value(availableKwh)
-
-        # discharge_bypass accumulates the solar-only power produced by SOCFULL devices.
-        # Subtract it from setpoint to avoid over-discharging from grid, but clamp so
-        # setpoint never goes below 0 when p1 >= 0: a SOCFULL device producing solar
-        # should still cover home demand, not trigger charge mode (fixes #1151 output
-        # cycling to 0W with bypass forbidden + 100% SoC).
-        if self.discharge_bypass > 0:
-            setpoint = max(0 if p1 >= 0 else setpoint - self.discharge_bypass, setpoint - self.discharge_bypass)
 
         # Update power distribution.
         _LOGGER.info("P1 ======> p1:%s isFast:%s, setpoint:%sW stored:%sW", p1, isFast, setpoint, self.produced)
@@ -510,6 +502,10 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
         for d in self.discharge:
             # avoid stopping bypassing devices
             if d.byPass.asInt > 0:
+                continue
+            # SOCFULL devices are only passing solar — stopping them would cut that
+            # solar source and cause the charge/stop oscillation fixed by #1151.
+            if d.state == DeviceState.SOCFULL and d.exports_bypass:
                 continue
             # avoid gridOff device to use power from the grid
             await d.power_discharge(0 if d.pwr_offgrid == 0 else -10)
