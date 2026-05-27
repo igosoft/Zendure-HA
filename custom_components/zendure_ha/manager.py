@@ -447,6 +447,8 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
                     # to setpoint or the solar will cancel out the charge deficit below.
                     if d.state != DeviceState.SOCFULL or not d.exports_bypass:
                         setpoint += home
+                    else:
+                        _LOGGER.info("SOCFULL solar bypass: %s homeOutput:%sW kept out of setpoint", d.name, home)
 
                 else:
                     self.idle.append(d)
@@ -506,6 +508,7 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
             # SOCFULL devices are only passing solar — stopping them would cut that
             # solar source and cause the charge/stop oscillation fixed by #1151.
             if d.state == DeviceState.SOCFULL and d.exports_bypass:
+                _LOGGER.info("SOCFULL solar bypass: %s kept running during charge", d.name)
                 continue
             # avoid gridOff device to use power from the grid
             await d.power_discharge(0 if d.pwr_offgrid == 0 else -10)
