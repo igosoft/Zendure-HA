@@ -523,7 +523,7 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
         self.operationstate.update_value(ManagerState.CHARGE.value if setpoint < 0 else ManagerState.IDLE.value)
 
         # distribute charging devices
-        dev_start = min(0, setpoint - self.charge_optimal * 2) if setpoint < -SmartMode.POWER_START else 0
+        dev_start = min(0, setpoint - self.charge_optimal) if setpoint < -SmartMode.POWER_START else 0
         limit = self.charge_limit
         setpoint = max(limit, setpoint)
         for i, d in enumerate(sorted(self.charge, key=lambda d: d.electricLevel.asInt, reverse=True)):
