@@ -310,8 +310,11 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
             self.p1meterEvent()
         if p1meter:
             self.p1meterEvent = async_track_state_change_event(self.hass, [p1meter], self._p1_changed)
-            if (entity := self.hass.states.get(p1meter)) is not None and entity.attributes.get("unit_of_measurement", "W") in ("kW", "kilowatt", "kilowatts"):
-                self.p1_factor = 1000
+            if (entity := self.hass.states.get(p1meter)) is not None:
+                if entity.attributes.get("unit_of_measurement", "W") in ("kW", "kilowatt", "kilowatts"):
+                    self.p1_factor = 1000
+            else:
+                _LOGGER.warning("P1 meter entity '%s' not found — check the entity ID in the integration config", p1meter)
         else:
             self.p1meterEvent = None
 
@@ -359,12 +362,15 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
 
     async def _p1_changed(self, event: Event[EventStateChangedData]) -> None:
         # exit if there is nothing to do
-        if not self.hass.is_running or not self.hass.is_running or (new_state := event.data["new_state"]) is None:
+        if not self.hass.is_running or (new_state := event.data["new_state"]) is None:
             return
+
+        _LOGGER.info("P1 event: entity=%s state=%s", event.data.get("entity_id", "?"), new_state.state)
 
         try:  # convert the state to a float
             p1 = int(self.p1_factor * float(new_state.state))
         except ValueError:
+            _LOGGER.warning("P1 sensor state '%s' is not numeric — check sensor unit and state", new_state.state)
             return
 
         # Get time & update simulation
@@ -438,6 +444,7 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
                     # Credit only the portion of homeInput that reaches the battery; AC
                     # drawn but not stored is real demand on the home bus, not surplus.
                     setpoint -= min(d.homeInput.asInt, d.batteryInput.asInt)
+                    _LOGGER.debug("Device %s => charge  | homeIn=%s homeOut=%s byPass=%s soc=%s state=%s", d.name, d.homeInput.asInt, d.homeOutput.asInt, d.byPass.asInt, d.electricLevel.asInt, d.state)
                 # SOCEMPTY means, it could not discharge the battery, but it is still possible to feed into the home using solarpower or offGrid
                 elif (home := d.homeOutput.asInt) > 0:
                     self.discharge.append(d)
@@ -447,11 +454,13 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
                     self.discharge_produced -= d.pwr_produced
                     self.discharge_weight += d.pwr_max * d.electricLevel.asInt
                     setpoint += home
+                    _LOGGER.debug("Device %s => discharge| homeIn=%s homeOut=%s byPass=%s soc=%s state=%s", d.name, d.homeInput.asInt, d.homeOutput.asInt, d.byPass.asInt, d.electricLevel.asInt, d.state)
 
                 else:
                     self.idle.append(d)
                     self.idle_lvlmax = max(self.idle_lvlmax, d.electricLevel.asInt)
                     self.idle_lvlmin = min(self.idle_lvlmin, d.electricLevel.asInt if d.state != DeviceState.SOCFULL else 100)
+                    _LOGGER.debug("Device %s => idle    | homeIn=%s homeOut=%s byPass=%s soc=%s state=%s", d.name, d.homeInput.asInt, d.homeOutput.asInt, d.byPass.asInt, d.electricLevel.asInt, d.state)
 
                 availableKwh += d.actualKwh
                 power += d.pwr_offgrid + home + d.pwr_produced
