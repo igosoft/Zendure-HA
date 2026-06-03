@@ -34,7 +34,6 @@ class DeviceState(Enum):
     SOCFULL = 3
     ACTIVE = 4
 
-
 class ManagerMode(Enum):
     OFF = 0
     MANUAL = 1
