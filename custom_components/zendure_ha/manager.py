@@ -436,6 +436,8 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
                     # Credit only the portion of homeInput that reaches the battery; AC
                     # drawn but not stored is real demand on the home bus, not surplus.
                     setpoint -= min(d.homeInput.asInt, d.batteryInput.asInt)
+                    _LOGGER.info("Device %s -> CHARGE homeIn:%sW batIn:%sW pwr_offgrid:%sW sp:%sW",
+                                 d.name, d.homeInput.asInt, d.batteryInput.asInt, d.pwr_offgrid, setpoint)
                 # SOCEMPTY means, it could not discharge the battery, but it is still possible to feed into the home using solarpower or offGrid
                 elif (home := d.homeOutput.asInt) > 0:
                     self.discharge.append(d)
@@ -449,9 +451,11 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
                         setpoint += home
                     else:
                         _LOGGER.info("SOCFULL solar bypass: %s homeOutput:%sW kept out of setpoint", d.name, home)
-
+                    _LOGGER.info("Device %s -> DISCHARGE homeOut:%sW socfull:%s bypass:%s sp:%sW",
+                                 d.name, home, d.state == DeviceState.SOCFULL, d.exports_bypass, setpoint)
                 else:
                     self.idle.append(d)
+                    _LOGGER.info("Device %s -> IDLE homeIn:%sW homeOut:%sW pwr_offgrid:%sW", d.name, d.homeInput.asInt, d.homeOutput.asInt, d.pwr_offgrid)
                     self.idle_lvlmax = max(self.idle_lvlmax, d.electricLevel.asInt)
                     self.idle_lvlmin = min(self.idle_lvlmin, d.electricLevel.asInt if d.state != DeviceState.SOCFULL else 100)
 
@@ -551,6 +555,8 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
                 self.pwr_low = 0 if (delta := d.charge_start * 1.5 - pwr) >= 0 else self.pwr_low + int(-delta)
                 pwr = 0 if self.pwr_low < d.charge_optimal else pwr
 
+            _LOGGER.info("Charge alloc: %s pwr:%sW SOC:%s%% weight:%s/%s",
+                         d.name, pwr, d.electricLevel.asInt, device_weight, self.charge_weight + device_weight)
             setpoint -= await d.power_charge(pwr)
             dev_start += -1 if pwr != 0 and d.electricLevel.asInt > self.idle_lvlmin + 3 else 0
 
