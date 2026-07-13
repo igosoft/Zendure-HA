@@ -430,6 +430,8 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
             if await d.power_get():
                 # get power production
                 d.pwr_produced = min(0, d.batteryOutput.asInt + d.homeInput.asInt - d.batteryInput.asInt - d.homeOutput.asInt)
+                if d.state == DeviceState.SOCFULL and -d.solarInput.asInt < d.pwr_produced:
+                    d.pwr_produced = -d.solarInput.asInt
                 self.produced -= d.pwr_produced
 
                 # only positive pwr_offgrid must be taken into account, negative values count a solarInput
