@@ -265,7 +265,7 @@ class ZendureDevice(EntityDevice):
                             self.nextCalibration.update_value(dt_util.now() + timedelta(days=30))
                         self.availableKwh.update_value((self.electricLevel.asNumber - self.minSoc.asNumber) / 100 * self.kWh)
                     case "gridReverse":
-                        self.exports_bypass = value != 2
+                        self.exports_bypass = value == 1
         except Exception as e:
             _LOGGER.error("EntityUpdate error %s %s %s!", self.name, key, e)
             _LOGGER.error(traceback.format_exc())
