@@ -5,5 +5,5 @@
     "zip_release": true,
     "hide_default_branch": false,
     "filename": "zendure_ha.zip",
-    "content_in_root": true
+    "content_in_root": false
 }
