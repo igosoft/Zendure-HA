@@ -42,10 +42,6 @@ class ManagerMode(Enum):
     MATCHING_DISCHARGE = 3
     MATCHING_CHARGE = 4
     STORE_SOLAR = 5
-    SMART_SOLAR_PASSTHROUGH = 6
-
-
-DISCHARGE_MODES = frozenset({ManagerMode.MATCHING, ManagerMode.MATCHING_DISCHARGE, ManagerMode.MATCHING_CHARGE, ManagerMode.SMART_SOLAR_PASSTHROUGH})
 
 
 class ManagerState(Enum):
