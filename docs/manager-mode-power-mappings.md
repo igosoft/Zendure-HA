@@ -27,7 +27,7 @@ TODO: add the 2nd and more devices (due to different SoC)
 
 ## AC grid charging (global spec rule)
 
-No device charges its battery **from the AC grid** in any automatic mode. MATCHING, MATCHING_DISCHARGE, MATCHING_CHARGE, STORE_SOLAR and SMART_SOLAR_PASSTHROUGH only ever charge the battery from the device's **own solar**. Consequently every `Device to grid` value in those tables is **≥ 0** — a battery is never filled by importing from the grid.
+No device charges its battery **from the AC grid** in any automatic mode. MATCHING, MATCHING_DISCHARGE, MATCHING_CHARGE and STORE_SOLAR only ever charge the battery from the device's **own solar**. Consequently every `Device to grid` value in those tables is **≥ 0** — a battery is never filled by importing from the grid.
 
 Only **MANUAL** mode may import from the grid: a negative *Manual Power* asks the device to draw and store grid energy (a negative `Device to grid`). This works **only on devices that physically support AC input** (e.g. Hyper2000). Devices of the HUB family (Hub1200 / Hub2000) have no AC-charge path — they ignore a negative setpoint and stay idle, so their battery still only ever charges from available solar. **The negative-power rows in the MANUAL table below assume an AC-capable device.**
 
@@ -323,30 +323,3 @@ These tables are the source of truth for the tests. When turning rows into cases
 | 31 | −300 W | 200 W | not full | 0 W | 200 W | 0 W | charge capped at available solar |
 | 32 | −300 W | 500 W | FULL | 0 W | 0 W | 500 W | bypass overrides, solar to home |
 | 33 | −300 W | 500 W | not full | 0 W | 500 W | 0 W | charge from all available solar |
-
-## SMART_SOLAR_PASSTHROUGH Mode — Power Mappings
-
-`max(self.produced, max(0, p1))` — solar always passes through to home. Battery only discharges to cover the gap when P1 > PV (and SoC allows). Negative P1 is ignored (clamped to 0). No charging from grid.
-
-| # | P1 | PV | SoC State | Battery Discharging | Battery Charging | Device to grid | Notes |
-|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| 1 | 100 W | 0 W | EMPTY | 0 W | 0 W | 0 W | can't discharge, P1 unmatched |
-| 2 | 100 W | 0 W | FULL | 0 W | 0 W | 0 W | nothing to give |
-| 3 | 100 W | 0 W | not full | 100 W | 0 W | 100 W | pure battery discharge |
-| 4 | 100 W | 100 W | any | 0 W | 0 W | 100 W | solar matches P1 exactly |
-| 5 | 100 W | 200 W | any | 0 W | 0 W | 200 W | all solar to home, covers P1 with excess |
-| 6 | 100 W | 300 W | any | 0 W | 0 W | 300 W | all solar to home, large excess |
-| 7 | 100 W | 50 W | EMPTY | 0 W | 0 W | 50 W | can't discharge, solar only |
-| 8 | 100 W | 50 W | FULL | 0 W | 0 W | 50 W | bypass only, partial match |
-| 9 | 100 W | 50 W | not full | 50 W | 0 W | 100 W | 50 W solar + 50 W battery = matches P1 |
-| 10 | 300 W | 0 W | EMPTY | 0 W | 0 W | 0 W | can't discharge, P1 unmatched |
-| 11 | 300 W | 0 W | FULL | 0 W | 0 W | 0 W | nothing to give |
-| 12 | 300 W | 0 W | not full | 300 W | 0 W | 300 W | high demand, pure battery |
-| 13 | 300 W | 200 W | EMPTY | 0 W | 0 W | 200 W | can't discharge, solar only |
-| 14 | 300 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass only, can't fully match P1 |
-| 15 | 300 W | 200 W | not full | 100 W | 0 W | 300 W | 200 W solar + 100 W battery |
-| 16 | 0 W | 0 W | any | 0 W | 0 W | 0 W | nothing to do |
-| 17 | 0 W | 200 W | any | 0 W | 0 W | 200 W | solar to home, no P1 demand |
-| 18 | −100 W | 0 W | any | 0 W | 0 W | 0 W | nothing to do |
-| 19 | −100 W | 100 W | any | 0 W | 0 W | 100 W | solar to home, P1 ignored |
-| 20 | −300 W | 200 W | any | 0 W | 0 W | 200 W | solar to home, P1 ignored |

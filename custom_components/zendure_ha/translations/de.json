@@ -435,8 +435,7 @@
           "smart": "Smarte Leistungsregelung",
           "smart_discharging": "Smartes nur Entladen",
           "smart_charging": "Smartes nur Laden",
-          "store_solar": "Solar speichern",
-          "smart_solar_passthrough": "Solar Durchleitung"
+          "store_solar": "Solar speichern"
         }
       },
       "pass_mode": {
