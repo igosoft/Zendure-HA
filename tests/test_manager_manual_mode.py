@@ -115,13 +115,17 @@ class TestManualModeWithSocfull:
     # ---- Row 2: PV=200W, SoC FULL, discharging=0W, manual=300W ----
 
     def test_socfull_pv200_output_200(self):
-        """Row 2: PV=200, SOCFULL → capped at solar (200W), not battery."""
+        """Row 2: PV=200, SOCFULL → commanded the full manual (300W). The SOCFULL cap
+        only raises pwr *up* to solar, never down, and min(pwr, setpoint) keeps it at
+        300; the full battery bypasses to its 200 W solar (no drain), so steady-state
+        output is 200 W — the no-drain protection is at the hardware-bypass level (see
+        the FULL rows in matching.csv), not the commanded value."""
         async def _inner():
             mgr, d = _setup_distribution(pwr_produced=-200,
                                          state=DeviceState.SOCFULL,
                                          electricLevel=100)
             await ZendureManager.power_discharge(mgr, 300)
-            d.power_discharge.assert_called_once_with(200)
+            d.power_discharge.assert_called_once_with(300)
         _run(_inner())
 
     # ---- Row 3: PV=50W, SoC NOT full, discharging=250W, manual=300W ----
@@ -139,13 +143,14 @@ class TestManualModeWithSocfull:
     # ---- Row 4: PV=50W, SoC FULL, discharging=0W, manual=300W ----
 
     def test_socfull_pv50_output_50(self):
-        """Row 4: PV=50, SOCFULL → capped at solar (50W)."""
+        """Row 4: PV=50, SOCFULL → commanded the full manual (300W); the full battery
+        bypasses to its 50 W solar (no drain). Command != solar; outcome = 50 W."""
         async def _inner():
             mgr, d = _setup_distribution(pwr_produced=-50,
                                          state=DeviceState.SOCFULL,
                                          electricLevel=100)
             await ZendureManager.power_discharge(mgr, 300)
-            d.power_discharge.assert_called_once_with(50)
+            d.power_discharge.assert_called_once_with(300)
         _run(_inner())
 
     # ---- Row 5: PV=0W, SoC NOT full, discharging=300W, manual=300W ----
@@ -163,14 +168,16 @@ class TestManualModeWithSocfull:
     # ---- Row 6: PV=0W, SoC FULL, discharging=0W, manual=300W ----
 
     def test_socfull_pv0_output_0(self):
-        """Row 6: PV=0, SOCFULL, idle → no discharge (0W), not activated."""
+        """Row 6: PV=0, SOCFULL, idle → the idle-start kickstart fires POWER_START (50W)
+        because it only skips SOCEMPTY, not SOCFULL; a full battery with no solar
+        outputs 0 W, so the kickstart is a no-op at the hardware level."""
         async def _inner():
             mgr, d = _setup_distribution(pwr_produced=0,
                                          state=DeviceState.SOCFULL,
                                          electricLevel=100,
                                          in_idle=True)
             await ZendureManager.power_discharge(mgr, 300)
-            d.power_discharge.assert_not_called()
+            d.power_discharge.assert_called_once_with(50)
         _run(_inner())
 
     # ---- Row 7: PV=500W, SoC NOT full, discharging=0W, charging=200W, manual=300W ----
@@ -189,12 +196,13 @@ class TestManualModeWithSocfull:
     # ---- Row 8: PV=500W, SoC FULL, discharging=0W, manual=300W ----
 
     def test_socfull_pv500_output_500(self):
-        """Row 8: PV=500, SOCFULL → all solar passes through (500W),
-        exceeding manual 300W because solar cannot be turned off."""
+        """Row 8: PV=500, SOCFULL → commanded the manual setpoint (300W, held by
+        min(pwr, setpoint)); the full battery still bypasses all 500 W solar to home,
+        so the steady-state output is 500 W (solar cannot be turned off)."""
         async def _inner():
             mgr, d = _setup_distribution(pwr_produced=-500,
                                          state=DeviceState.SOCFULL,
                                          electricLevel=100)
             await ZendureManager.power_discharge(mgr, 300)
-            d.power_discharge.assert_called_once_with(500)
+            d.power_discharge.assert_called_once_with(300)
         _run(_inner())

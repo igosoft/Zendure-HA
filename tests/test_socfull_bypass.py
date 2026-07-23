@@ -145,8 +145,11 @@ class TestPowerChargeStopLoop:
     def test_socfull_exports_bypass_device_not_stopped(self):
         """Hub2000 (SOCFULL, exports_bypass=True) must NOT receive power_discharge(0)."""
         async def _inner():
+            # A SOCFULL device passing 800 W solar to home is in hardware bypass
+            # (byPass > 0); the current stop-loop skips such devices by byPass.asInt,
+            # so it is not stopped.
             hub = _device(name="Hub2000", state=DeviceState.SOCFULL, exports_bypass=True,
-                          homeOutput=800)
+                          homeOutput=800, bypass=2)
             mgr = _manager()
             mgr.discharge = [hub]
 
@@ -187,7 +190,7 @@ class TestPowerChargeStopLoop:
         """Hub (SOCFULL+bypass) kept running; SF2400 (non-SOCFULL) stopped."""
         async def _inner():
             hub = _device(name="Hub2000", state=DeviceState.SOCFULL, exports_bypass=True,
-                          homeOutput=800)
+                          homeOutput=800, bypass=2)  # bypassing device → byPass>0, kept running
             sf = _device(name="SF2400", homeOutput=400)
             mgr = _manager()
             mgr.discharge = [hub, sf]

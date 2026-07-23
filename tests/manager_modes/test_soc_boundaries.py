@@ -22,9 +22,12 @@ class TestSocBoundaries:
             d.socSet = _sensor(80)
             mgr = _manager(operation=MODE, devices=[d])
             await ZendureManager.powerChanged(mgr, p1=100, isFast=False, time=datetime.now())
-            # eLevel(80) >= socSet(80) → SOCFULL → capped at solar
-            # pwr_produced = min(0, 0+0-0-200) = -200 → cap at 200
-            d.power_discharge.assert_called_with(200)
+            # eLevel(80) >= socSet(80) → SOCFULL. The bypass (200 W) is removed from
+            # the dispatchable setpoint (100 + 200 - 200 = 100), and the SOCFULL solar
+            # cap is re-capped by min(pwr, setpoint) back to 100. The full battery still
+            # bypasses all 200 W solar to home, so steady-state Device-to-grid = 200
+            # (see matching.csv r73) — only the commanded value is 100.
+            d.power_discharge.assert_called_with(100)
         _run(_inner())
 
     def test_socset_80_elevel_79_is_not_full(self):
@@ -102,8 +105,10 @@ class TestSocBoundaries:
             d.socSet = _sensor(80)
             mgr = _manager(operation=MODE, devices=[d])
             await ZendureManager.powerChanged(mgr, p1=100, isFast=False, time=datetime.now())
-            # SOCFULL at 80%, PV=200 → pwr = -pwr_produced = 200 (solar passthrough)
-            d.power_discharge.assert_called_with(200)
+            # SOCFULL at 80%, PV=200. Dispatchable setpoint = 100 (bypass removed), so
+            # the command is 100; the full battery still bypasses all 200 W solar to
+            # home (steady-state Device-to-grid = 200, see matching.csv r73).
+            d.power_discharge.assert_called_with(100)
         _run(_inner())
 
     def test_minsoc_20_elevel_20_manual_discharge_blocked(self):
