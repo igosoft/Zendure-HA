@@ -1,0 +1,58 @@
+mode,case,input_w,pv_w,soc,battery_discharging_w,battery_charging_w,device_to_grid_w,notes
+MANUAL,1,300,0,EMPTY,0,0,0,"can't discharge, no solar"
+MANUAL,2,300,0,FULL,0,0,0,nothing to bypass
+MANUAL,3,300,0,not full,300,0,300,pure battery discharge
+MANUAL,4,300,200,EMPTY,0,0,200,"can't discharge, solar passes to home"
+MANUAL,5,300,200,FULL,0,0,200,bypass caps output at PV
+MANUAL,6,300,200,not full,100,0,300,"solar covers 200 W, battery covers 100 W"
+MANUAL,7,300,50,EMPTY,0,0,50,"can't discharge, solar only"
+MANUAL,8,300,50,FULL,0,0,50,bypass only
+MANUAL,9,300,50,not full,250,0,300,mostly battery discharge
+MANUAL,10,300,500,EMPTY,0,200,300,"can't discharge; solar covers 300 W output, 200 W excess charges battery"
+MANUAL,11,300,500,FULL,0,0,500,bypass overrides manual setpoint
+MANUAL,12,300,500,not full,0,200,300,"solar covers all output, 200 W excess charges battery"
+MANUAL,13,100,0,EMPTY,0,0,0,"can't discharge, no solar"
+MANUAL,14,100,0,FULL,0,0,0,nothing to bypass
+MANUAL,15,100,0,not full,100,0,100,pure battery discharge
+MANUAL,16,100,200,EMPTY,0,100,100,"can't discharge; solar covers 100 W output, 100 W excess charges battery"
+MANUAL,17,100,200,FULL,0,0,200,"bypass overrides, all solar to home"
+MANUAL,18,100,200,not full,0,100,100,"solar covers all output, 100 W excess charges battery"
+MANUAL,19,100,50,EMPTY,0,0,50,"can't discharge, solar only"
+MANUAL,20,100,50,FULL,0,0,50,bypass only
+MANUAL,21,100,50,not full,50,0,100,50W solar + 50W battery
+MANUAL,22,50,0,EMPTY,0,0,0,"can't discharge, no solar"
+MANUAL,23,50,0,FULL,0,0,0,nothing to bypass
+MANUAL,24,50,0,not full,50,0,50,pure battery discharge
+MANUAL,25,50,200,EMPTY,0,150,50,"can't discharge; solar covers 50 W output, 150 W excess charges battery"
+MANUAL,26,50,200,FULL,0,0,200,"bypass overrides, all solar to home"
+MANUAL,27,50,200,not full,0,150,50,"solar covers all output, 150 W excess charges battery"
+MANUAL,28,50,50,EMPTY,0,0,50,"can't discharge, solar only"
+MANUAL,29,50,50,FULL,0,0,50,bypass only
+MANUAL,30,50,50,not full,0,0,50,"solar covers manual output exactly, battery neutral"
+MANUAL,31,0,0,EMPTY,0,0,0,"idle, nothing to do"
+MANUAL,32,0,0,FULL,0,0,0,"idle, nothing to bypass"
+MANUAL,33,0,0,not full,0,0,0,all idle
+MANUAL,34,0,200,EMPTY,0,200,0,solar charges empty battery
+MANUAL,35,0,200,FULL,0,0,200,FULL battery bypasses solar to home
+MANUAL,36,0,200,not full,0,200,0,solar charges battery
+MANUAL,37,-50,0,EMPTY,0,50,-50,full grid charging
+MANUAL,38,-50,0,FULL,0,0,0,can't charge a full battery
+MANUAL,39,-50,0,not full,0,50,-50,full grid charging
+MANUAL,40,-50,200,EMPTY,0,250,-50,50 W from grid + 200 W solar into battery; net grid draw 50 W
+MANUAL,41,-50,200,FULL,0,0,200,"battery full, can't charge; bypass sends all solar to home"
+MANUAL,42,-50,200,not full,0,250,-50,50 W from grid + 200 W solar into battery; net grid draw 50 W
+MANUAL,43,-100,0,EMPTY,0,100,-100,full grid charging
+MANUAL,44,-100,0,FULL,0,0,0,can't charge a full battery
+MANUAL,45,-100,0,not full,0,100,-100,full grid charging
+MANUAL,46,-100,200,EMPTY,0,300,-100,100 W from grid + 200 W solar into battery; net grid draw 100 W
+MANUAL,47,-100,200,FULL,0,0,200,"battery full, can't charge; bypass sends all solar to home"
+MANUAL,48,-100,200,not full,0,300,-100,100 W from grid + 200 W solar into battery; net grid draw 100 W
+MANUAL,49,-300,0,EMPTY,0,300,-300,full grid charging
+MANUAL,50,-300,0,FULL,0,0,0,can't charge a full battery
+MANUAL,51,-300,0,not full,0,300,-300,full grid charging
+MANUAL,52,-300,200,EMPTY,0,500,-300,300 W from grid + 200 W solar into battery; net grid draw 300 W
+MANUAL,53,-300,200,FULL,0,0,200,"battery full, can't charge; bypass sends all solar to home"
+MANUAL,54,-300,200,not full,0,500,-300,300 W from grid + 200 W solar into battery; net grid draw 300 W
+MANUAL,55,-300,500,EMPTY,0,800,-300,300 W from grid + 500 W solar into battery; net grid draw 300 W
+MANUAL,56,-300,500,FULL,0,0,500,"battery full, can't charge; bypass sends all solar to home"
+MANUAL,57,-300,500,not full,0,800,-300,300 W from grid + 500 W solar into battery; net grid draw 300 W

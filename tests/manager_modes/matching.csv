@@ -1,0 +1,58 @@
+mode,case,input_w,pv_w,soc,battery_discharging_w,battery_charging_w,device_to_grid_w,notes
+MATCHING,1,50,0,EMPTY,0,0,0,"can't discharge, P1 unmatched"
+MATCHING,2,50,0,FULL,0,0,0,nothing to give
+MATCHING,3,50,0,not full,50,0,50,pure battery discharge
+MATCHING,4,50,50,EMPTY,0,0,50,"solar covers P1 exactly, can't discharge"
+MATCHING,5,50,50,FULL,0,0,50,bypass matches P1 exactly
+MATCHING,6,50,50,not full,0,0,50,"solar covers P1 exactly, battery neutral"
+MATCHING,7,50,200,EMPTY,0,150,50,"solar covers P1, 150 W excess charges battery"
+MATCHING,8,50,200,FULL,0,0,200,bypass sends all solar to home
+MATCHING,9,50,200,not full,0,150,50,"PV excess charges battery, matches P1"
+MATCHING,10,100,0,EMPTY,0,0,0,"can't discharge, P1 unmatched"
+MATCHING,11,100,0,FULL,0,0,0,nothing to give
+MATCHING,12,100,0,not full,100,0,100,pure battery discharge
+MATCHING,13,100,50,EMPTY,0,0,50,"partial match, solar only"
+MATCHING,14,100,50,FULL,0,0,50,"bypass only, can't fully match P1"
+MATCHING,15,100,50,not full,50,0,100,50 W solar + 50 W battery = matches P1
+MATCHING,16,100,100,EMPTY,0,0,100,"exact balance, battery neutral"
+MATCHING,17,100,100,FULL,0,0,100,bypass matches P1 exactly
+MATCHING,18,100,100,not full,0,0,100,"solar covers P1 exactly, battery neutral"
+MATCHING,19,100,200,EMPTY,0,100,100,"solar covers P1, 100 W excess charges battery"
+MATCHING,20,100,200,FULL,0,0,200,bypass sends all solar to home
+MATCHING,21,100,200,not full,0,100,100,"PV excess charges battery, matches P1"
+MATCHING,22,100,300,EMPTY,0,200,100,"solar covers P1, 200 W excess charges battery"
+MATCHING,23,100,300,FULL,0,0,300,bypass sends all solar to home
+MATCHING,24,100,300,not full,0,200,100,"200 W PV excess charges battery, matches P1"
+MATCHING,25,200,0,EMPTY,0,0,0,"can't discharge, P1 unmatched"
+MATCHING,26,200,0,FULL,0,0,0,nothing to give
+MATCHING,27,200,0,not full,200,0,200,pure battery discharge
+MATCHING,28,200,100,EMPTY,0,0,100,"can't discharge, solar only (100 W unmatched)"
+MATCHING,29,200,100,FULL,0,0,100,"bypass only, partial match"
+MATCHING,30,200,100,not full,100,0,200,100 W solar + 100 W battery = matches P1
+MATCHING,31,200,200,EMPTY,0,0,200,"solar covers P1 exactly, can't discharge"
+MATCHING,32,200,200,FULL,0,0,200,bypass matches P1 exactly
+MATCHING,33,200,200,not full,0,0,200,"solar covers P1 exactly, battery neutral"
+MATCHING,34,300,0,EMPTY,0,0,0,"can't discharge, P1 unmatched"
+MATCHING,35,300,0,FULL,0,0,0,nothing to give
+MATCHING,36,300,0,not full,300,0,300,"high demand, pure battery"
+MATCHING,37,500,200,EMPTY,0,0,200,"can't discharge, solar only"
+MATCHING,38,500,200,FULL,0,0,200,"bypass only, can't fully match P1"
+MATCHING,39,500,200,not full,300,0,500,battery + solar combined
+MATCHING,40,0,0,EMPTY,0,0,0,"idle, nothing to do"
+MATCHING,41,0,0,FULL,0,0,0,"idle, nothing to bypass"
+MATCHING,42,0,0,not full,0,0,0,everything idle
+MATCHING,43,0,200,EMPTY,0,200,0,all solar stored in battery
+MATCHING,44,0,200,FULL,0,0,200,bypass passes solar to home
+MATCHING,45,0,200,not full,0,200,0,all solar stored in battery
+MATCHING,46,-100,0,EMPTY,0,0,0,no own solar; can't charge from grid → P1 unmatched
+MATCHING,47,-100,0,FULL,0,0,0,battery full and no solar; can't charge from grid → P1 unmatched
+MATCHING,48,-100,0,not full,0,0,0,no own solar; can't charge from grid → P1 unmatched
+MATCHING,49,-100,100,EMPTY,0,100,0,solar stored in battery
+MATCHING,50,-100,100,FULL,0,0,100,bypass sends solar to home
+MATCHING,51,-100,100,not full,0,100,0,solar stored in battery
+MATCHING,52,-100,200,EMPTY,0,200,0,store all available solar; can't charge from grid
+MATCHING,53,-100,200,FULL,0,0,200,bypass all solar to home
+MATCHING,54,-100,200,not full,0,200,0,store all available solar; can't charge from grid
+MATCHING,55,-300,500,EMPTY,0,500,0,store all available solar; can't charge from grid
+MATCHING,56,-300,500,FULL,0,0,500,"bypass overrides, solar to home"
+MATCHING,57,-300,500,not full,0,500,0,store all available solar; can't charge from grid

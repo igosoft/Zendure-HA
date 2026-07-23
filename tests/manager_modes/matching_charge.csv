@@ -1,0 +1,37 @@
+mode,case,input_w,pv_w,soc,battery_discharging_w,battery_charging_w,device_to_grid_w,notes
+MATCHING_CHARGE,1,100,0,any,0,0,0,"no solar, battery preserved — P1 unmatched"
+MATCHING_CHARGE,2,100,100,EMPTY,0,0,100,"exact balance, battery neutral"
+MATCHING_CHARGE,3,100,100,FULL,0,0,100,bypass matches P1 exactly
+MATCHING_CHARGE,4,100,100,not full,0,0,100,"exact balance, battery neutral"
+MATCHING_CHARGE,5,100,200,EMPTY,0,100,100,"solar covers P1, 100 W excess charges battery"
+MATCHING_CHARGE,6,100,200,FULL,0,0,200,bypass sends all solar to home
+MATCHING_CHARGE,7,100,200,not full,0,100,100,"solar covers P1, 100 W excess charges battery"
+MATCHING_CHARGE,8,100,300,EMPTY,0,200,100,"solar covers P1, 200 W excess charges battery"
+MATCHING_CHARGE,9,100,300,FULL,0,0,300,bypass sends all solar to home
+MATCHING_CHARGE,10,100,300,not full,0,200,100,"solar covers P1, 200 W excess charges battery"
+MATCHING_CHARGE,11,100,50,EMPTY,0,0,50,"solar only, battery does NOT discharge to cover gap"
+MATCHING_CHARGE,12,100,50,FULL,0,0,50,"bypass only, partial match"
+MATCHING_CHARGE,13,100,50,not full,0,0,50,"solar only, battery does NOT discharge to cover gap"
+MATCHING_CHARGE,14,300,200,EMPTY,0,0,200,"solar only, battery does NOT discharge, 100 W gap"
+MATCHING_CHARGE,15,300,200,FULL,0,0,200,"bypass only, battery preserved"
+MATCHING_CHARGE,16,300,200,not full,0,0,200,"solar only, battery preserved, 100 W gap"
+MATCHING_CHARGE,17,500,200,EMPTY,0,0,200,"solar only, battery does NOT discharge, 300 W gap"
+MATCHING_CHARGE,18,500,200,FULL,0,0,200,"bypass only, large gap"
+MATCHING_CHARGE,19,500,200,not full,0,0,200,"solar only, battery preserved, 300 W gap"
+MATCHING_CHARGE,20,0,0,any,0,0,0,everything idle
+MATCHING_CHARGE,21,0,200,EMPTY,0,200,0,all solar charges battery
+MATCHING_CHARGE,22,0,200,FULL,0,0,200,bypass passes solar to home
+MATCHING_CHARGE,23,0,200,not full,0,200,0,all solar stored in battery
+MATCHING_CHARGE,24,-100,100,EMPTY,0,100,0,solar stored in battery
+MATCHING_CHARGE,25,-100,200,EMPTY,0,200,0,all solar stored in battery
+MATCHING_CHARGE,26,-300,200,EMPTY,0,200,0,charge capped at available solar
+MATCHING_CHARGE,27,-300,200,FULL,0,0,200,"bypass overrides, solar to home"
+MATCHING_CHARGE,28,-300,500,EMPTY,0,500,0,charge from all available solar
+MATCHING_CHARGE,29,-100,0,any,0,0,0,nothing to charge from
+MATCHING_CHARGE,30,-100,100,FULL,0,0,100,bypass sends solar to home
+MATCHING_CHARGE,31,-100,100,not full,0,100,0,solar stored in battery
+MATCHING_CHARGE,32,-100,200,FULL,0,0,200,bypass all solar to home
+MATCHING_CHARGE,33,-100,200,not full,0,200,0,all solar stored in battery
+MATCHING_CHARGE,34,-300,200,not full,0,200,0,charge capped at available solar
+MATCHING_CHARGE,35,-300,500,FULL,0,0,500,"bypass overrides, solar to home"
+MATCHING_CHARGE,36,-300,500,not full,0,500,0,charge from all available solar
