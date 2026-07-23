@@ -64,63 +64,86 @@ These tables are the source of truth for the tests. When turning rows into cases
 
 | # | Manual Power | PV | SoC State | Battery Discharging | Battery Charging | Device to grid | Notes |
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| 1 | +300 W | 0 W | EMPTY | 0 W | 0 W | 0 W | can't discharge, no solar |
-| 2 | +300 W | 0 W | FULL | 0 W | 0 W | 0 W | nothing to bypass |
-| 3 | +300 W | 0 W | not full | 300 W | 0 W | 300 W | pure battery discharge |
-| 4 | +300 W | 200 W | EMPTY | 0 W | 0 W | 200 W | can't discharge, solar passes to home |
-| 5 | +300 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass caps output at PV |
-| 6 | +300 W | 200 W | not full | 100 W | 0 W | 300 W | solar covers 200 W, battery covers 100 W |
-| 7 | +300 W | 50 W | EMPTY | 0 W | 0 W | 50 W | can't discharge, solar only |
-| 8 | +300 W | 50 W | FULL | 0 W | 0 W | 50 W | bypass only |
-| 9 | +300 W | 50 W | not full | 250 W | 0 W | 300 W | mostly battery discharge |
-| 10 | +300 W | 500 W | EMPTY | 0 W | 200 W | 300 W | can't discharge; solar covers 300 W output, 200 W excess charges battery |
-| 11 | +300 W | 500 W | FULL | 0 W | 0 W | 500 W | bypass overrides manual setpoint |
-| 12 | +300 W | 500 W | not full | 0 W | 200 W | 300 W | solar covers all output, 200 W excess charges battery |
-| 13 | +100 W | 0 W | EMPTY | 0 W | 0 W | 0 W | can't discharge, no solar |
-| 14 | +100 W | 0 W | FULL | 0 W | 0 W | 0 W | nothing to bypass |
-| 15 | +100 W | 0 W | not full | 100 W | 0 W | 100 W | pure battery discharge |
-| 16 | +100 W | 200 W | EMPTY | 0 W | 100 W | 100 W | can't discharge; solar covers 100 W output, 100 W excess charges battery |
-| 17 | +100 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass overrides, all solar to home |
-| 18 | +100 W | 200 W | not full | 0 W | 100 W | 100 W | solar covers all output, 100 W excess charges battery |
-| 19 | +100 W | 50 W | EMPTY | 0 W | 0 W | 50 W | can't discharge, solar only |
-| 20 | +100 W | 50 W | FULL | 0 W | 0 W | 50 W | bypass only |
-| 21 | +100 W | 50 W | not full | 50 W | 0 W | 100 W | 50W solar + 50W battery |
-| 22 | +50 W | 0 W | EMPTY | 0 W | 0 W | 0 W | can't discharge, no solar |
-| 23 | +50 W | 0 W | FULL | 0 W | 0 W | 0 W | nothing to bypass |
-| 24 | +50 W | 0 W | not full | 50 W | 0 W | 50 W | pure battery discharge |
-| 25 | +50 W | 200 W | EMPTY | 0 W | 150 W | 50 W | can't discharge; solar covers 50 W output, 150 W excess charges battery |
-| 26 | +50 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass overrides, all solar to home |
-| 27 | +50 W | 200 W | not full | 0 W | 150 W | 50 W | solar covers all output, 150 W excess charges battery |
-| 28 | +50 W | 50 W | EMPTY | 0 W | 0 W | 50 W | can't discharge, solar only |
-| 29 | +50 W | 50 W | FULL | 0 W | 0 W | 50 W | bypass only |
-| 30 | +50 W | 50 W | not full | 0 W | 0 W | 50 W | solar covers manual output exactly, battery neutral |
-| 31 | 0 W | 0 W | EMPTY | 0 W | 0 W | 0 W | idle, nothing to do |
-| 32 | 0 W | 0 W | FULL | 0 W | 0 W | 0 W | idle, nothing to bypass |
-| 33 | 0 W | 0 W | not full | 0 W | 0 W | 0 W | all idle |
-| 34 | 0 W | 200 W | EMPTY | 0 W | 200 W | 0 W | solar charges empty battery |
-| 35 | 0 W | 200 W | FULL | 0 W | 0 W | 200 W | FULL battery bypasses solar to home |
-| 36 | 0 W | 200 W | not full | 0 W | 200 W | 0 W | solar charges battery |
-| 37 | -50 W | 0 W | EMPTY | 0 W | 50 W | -50 W | full grid charging |
-| 38 | -50 W | 0 W | FULL | 0 W | 0 W | 0 W | can't charge a full battery |
-| 39 | -50 W | 0 W | not full | 0 W | 50 W | -50 W | full grid charging |
-| 40 | -50 W | 200 W | EMPTY | 0 W | 250 W | -50 W | 50 W from grid + 200 W solar into battery; net grid draw 50 W |
-| 41 | -50 W | 200 W | FULL | 0 W | 0 W | 200 W | battery full, can't charge; bypass sends all solar to home |
-| 42 | -50 W | 200 W | not full | 0 W | 250 W | -50 W | 50 W from grid + 200 W solar into battery; net grid draw 50 W |
-| 43 | -100 W | 0 W | EMPTY | 0 W | 100 W | -100 W | full grid charging |
-| 44 | -100 W | 0 W | FULL | 0 W | 0 W | 0 W | can't charge a full battery |
-| 45 | -100 W | 0 W | not full | 0 W | 100 W | -100 W | full grid charging |
-| 46 | -100 W | 200 W | EMPTY | 0 W | 300 W | -100 W | 100 W from grid + 200 W solar into battery; net grid draw 100 W |
-| 47 | -100 W | 200 W | FULL | 0 W | 0 W | 200 W | battery full, can't charge; bypass sends all solar to home |
-| 48 | -100 W | 200 W | not full | 0 W | 300 W | -100 W | 100 W from grid + 200 W solar into battery; net grid draw 100 W |
-| 49 | −300 W | 0 W | EMPTY | 0 W | 300 W | −300 W | full grid charging |
-| 50 | −300 W | 0 W | FULL | 0 W | 0 W | 0 W | can't charge a full battery |
-| 51 | −300 W | 0 W | not full | 0 W | 300 W | −300 W | full grid charging |
-| 52 | −300 W | 200 W | EMPTY | 0 W | 500 W | −300 W | 300 W from grid + 200 W solar into battery; net grid draw 300 W |
-| 53 | −300 W | 200 W | FULL | 0 W | 0 W | 200 W | battery full, can't charge; bypass sends all solar to home |
-| 54 | −300 W | 200 W | not full | 0 W | 500 W | −300 W | 300 W from grid + 200 W solar into battery; net grid draw 300 W |
-| 55 | −300 W | 500 W | EMPTY | 0 W | 800 W | −300 W | 300 W from grid + 500 W solar into battery; net grid draw 300 W |
-| 56 | −300 W | 500 W | FULL | 0 W | 0 W | 500 W | battery full, can't charge; bypass sends all solar to home |
-| 57 | −300 W | 500 W | not full | 0 W | 800 W | −300 W | 300 W from grid + 500 W solar into battery; net grid draw 300 W |
+| 1 | -300 W | 0 W | EMPTY | 0 W | 300 W | -300 W | full grid charging |
+| 2 | -300 W | 0 W | FULL | 0 W | 0 W | 0 W | can't charge a full battery |
+| 3 | -300 W | 0 W | not full | 0 W | 300 W | -300 W | full grid charging |
+| 4 | -300 W | 50 W | EMPTY | 0 W | 350 W | -300 W | grid charge 300 W + 50 W solar into battery |
+| 5 | -300 W | 50 W | FULL | 0 W | 0 W | 50 W | battery full: bypass all solar to home |
+| 6 | -300 W | 50 W | not full | 0 W | 350 W | -300 W | grid charge 300 W + 50 W solar into battery |
+| 7 | -300 W | 200 W | EMPTY | 0 W | 500 W | -300 W | 300 W from grid + 200 W solar into battery; net grid draw 300 W |
+| 8 | -300 W | 200 W | FULL | 0 W | 0 W | 200 W | battery full, can't charge; bypass sends all solar to home |
+| 9 | -300 W | 200 W | not full | 0 W | 500 W | -300 W | 300 W from grid + 200 W solar into battery; net grid draw 300 W |
+| 10 | -300 W | 500 W | EMPTY | 0 W | 800 W | -300 W | 300 W from grid + 500 W solar into battery; net grid draw 300 W |
+| 11 | -300 W | 500 W | FULL | 0 W | 0 W | 500 W | battery full, can't charge; bypass sends all solar to home |
+| 12 | -300 W | 500 W | not full | 0 W | 800 W | -300 W | 300 W from grid + 500 W solar into battery; net grid draw 300 W |
+| 13 | -100 W | 0 W | EMPTY | 0 W | 100 W | -100 W | full grid charging |
+| 14 | -100 W | 0 W | FULL | 0 W | 0 W | 0 W | can't charge a full battery |
+| 15 | -100 W | 0 W | not full | 0 W | 100 W | -100 W | full grid charging |
+| 16 | -100 W | 50 W | EMPTY | 0 W | 150 W | -100 W | grid charge 100 W + 50 W solar into battery |
+| 17 | -100 W | 50 W | FULL | 0 W | 0 W | 50 W | battery full: bypass all solar to home |
+| 18 | -100 W | 50 W | not full | 0 W | 150 W | -100 W | grid charge 100 W + 50 W solar into battery |
+| 19 | -100 W | 200 W | EMPTY | 0 W | 300 W | -100 W | 100 W from grid + 200 W solar into battery; net grid draw 100 W |
+| 20 | -100 W | 200 W | FULL | 0 W | 0 W | 200 W | battery full, can't charge; bypass sends all solar to home |
+| 21 | -100 W | 200 W | not full | 0 W | 300 W | -100 W | 100 W from grid + 200 W solar into battery; net grid draw 100 W |
+| 22 | -100 W | 500 W | EMPTY | 0 W | 600 W | -100 W | grid charge 100 W + 500 W solar into battery |
+| 23 | -100 W | 500 W | FULL | 0 W | 0 W | 500 W | battery full: bypass all solar to home |
+| 24 | -100 W | 500 W | not full | 0 W | 600 W | -100 W | grid charge 100 W + 500 W solar into battery |
+| 25 | -50 W | 0 W | EMPTY | 0 W | 50 W | -50 W | full grid charging |
+| 26 | -50 W | 0 W | FULL | 0 W | 0 W | 0 W | can't charge a full battery |
+| 27 | -50 W | 0 W | not full | 0 W | 50 W | -50 W | full grid charging |
+| 28 | -50 W | 50 W | EMPTY | 0 W | 100 W | -50 W | grid charge 50 W + 50 W solar into battery |
+| 29 | -50 W | 50 W | FULL | 0 W | 0 W | 50 W | battery full: bypass all solar to home |
+| 30 | -50 W | 50 W | not full | 0 W | 100 W | -50 W | grid charge 50 W + 50 W solar into battery |
+| 31 | -50 W | 200 W | EMPTY | 0 W | 250 W | -50 W | 50 W from grid + 200 W solar into battery; net grid draw 50 W |
+| 32 | -50 W | 200 W | FULL | 0 W | 0 W | 200 W | battery full, can't charge; bypass sends all solar to home |
+| 33 | -50 W | 200 W | not full | 0 W | 250 W | -50 W | 50 W from grid + 200 W solar into battery; net grid draw 50 W |
+| 34 | -50 W | 500 W | EMPTY | 0 W | 550 W | -50 W | grid charge 50 W + 500 W solar into battery |
+| 35 | -50 W | 500 W | FULL | 0 W | 0 W | 500 W | battery full: bypass all solar to home |
+| 36 | -50 W | 500 W | not full | 0 W | 550 W | -50 W | grid charge 50 W + 500 W solar into battery |
+| 37 | 0 W | 0 W | any | 0 W | 0 W | 0 W | idle, nothing to do |
+| 38 | 0 W | 50 W | EMPTY | 0 W | 50 W | 0 W | all solar stored in battery |
+| 39 | 0 W | 50 W | FULL | 0 W | 0 W | 50 W | battery full: bypass all solar to home |
+| 40 | 0 W | 50 W | not full | 0 W | 50 W | 0 W | all solar stored in battery |
+| 41 | 0 W | 200 W | EMPTY | 0 W | 200 W | 0 W | solar charges empty battery |
+| 42 | 0 W | 200 W | FULL | 0 W | 0 W | 200 W | FULL battery bypasses solar to home |
+| 43 | 0 W | 200 W | not full | 0 W | 200 W | 0 W | solar charges battery |
+| 44 | 0 W | 500 W | EMPTY | 0 W | 500 W | 0 W | all solar stored in battery |
+| 45 | 0 W | 500 W | FULL | 0 W | 0 W | 500 W | battery full: bypass all solar to home |
+| 46 | 0 W | 500 W | not full | 0 W | 500 W | 0 W | all solar stored in battery |
+| 47 | 50 W | 0 W | EMPTY | 0 W | 0 W | 0 W | can't discharge, no solar |
+| 48 | 50 W | 0 W | FULL | 0 W | 0 W | 0 W | nothing to bypass |
+| 49 | 50 W | 0 W | not full | 50 W | 0 W | 50 W | pure battery discharge |
+| 50 | 50 W | 50 W | any | 0 W | 0 W | 50 W | solar passes to home, battery idle |
+| 51 | 50 W | 200 W | EMPTY | 0 W | 150 W | 50 W | can't discharge; solar covers 50 W output, 150 W excess charges battery |
+| 52 | 50 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass overrides, all solar to home |
+| 53 | 50 W | 200 W | not full | 0 W | 150 W | 50 W | solar covers all output, 150 W excess charges battery |
+| 54 | 50 W | 500 W | EMPTY | 0 W | 450 W | 50 W | surplus solar charges battery |
+| 55 | 50 W | 500 W | FULL | 0 W | 0 W | 500 W | battery full: bypass all solar to home |
+| 56 | 50 W | 500 W | not full | 0 W | 450 W | 50 W | surplus solar charges battery |
+| 57 | 100 W | 0 W | EMPTY | 0 W | 0 W | 0 W | can't discharge, no solar |
+| 58 | 100 W | 0 W | FULL | 0 W | 0 W | 0 W | nothing to bypass |
+| 59 | 100 W | 0 W | not full | 100 W | 0 W | 100 W | pure battery discharge |
+| 60 | 100 W | 50 W | EMPTY | 0 W | 0 W | 50 W | can't discharge, solar only |
+| 61 | 100 W | 50 W | FULL | 0 W | 0 W | 50 W | bypass only |
+| 62 | 100 W | 50 W | not full | 50 W | 0 W | 100 W | 50W solar + 50W battery |
+| 63 | 100 W | 200 W | EMPTY | 0 W | 100 W | 100 W | can't discharge; solar covers 100 W output, 100 W excess charges battery |
+| 64 | 100 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass overrides, all solar to home |
+| 65 | 100 W | 200 W | not full | 0 W | 100 W | 100 W | solar covers all output, 100 W excess charges battery |
+| 66 | 100 W | 500 W | EMPTY | 0 W | 400 W | 100 W | surplus solar charges battery |
+| 67 | 100 W | 500 W | FULL | 0 W | 0 W | 500 W | battery full: bypass all solar to home |
+| 68 | 100 W | 500 W | not full | 0 W | 400 W | 100 W | surplus solar charges battery |
+| 69 | 300 W | 0 W | EMPTY | 0 W | 0 W | 0 W | can't discharge, no solar |
+| 70 | 300 W | 0 W | FULL | 0 W | 0 W | 0 W | nothing to bypass |
+| 71 | 300 W | 0 W | not full | 300 W | 0 W | 300 W | pure battery discharge |
+| 72 | 300 W | 50 W | EMPTY | 0 W | 0 W | 50 W | can't discharge, solar only |
+| 73 | 300 W | 50 W | FULL | 0 W | 0 W | 50 W | bypass only |
+| 74 | 300 W | 50 W | not full | 250 W | 0 W | 300 W | mostly battery discharge |
+| 75 | 300 W | 200 W | EMPTY | 0 W | 0 W | 200 W | can't discharge, solar passes to home |
+| 76 | 300 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass caps output at PV |
+| 77 | 300 W | 200 W | not full | 100 W | 0 W | 300 W | solar covers 200 W, battery covers 100 W |
+| 78 | 300 W | 500 W | EMPTY | 0 W | 200 W | 300 W | can't discharge; solar covers 300 W output, 200 W excess charges battery |
+| 79 | 300 W | 500 W | FULL | 0 W | 0 W | 500 W | bypass overrides manual setpoint |
+| 80 | 300 W | 500 W | not full | 0 W | 200 W | 300 W | solar covers all output, 200 W excess charges battery |
 
 ## MATCHING Mode — Power Mappings
 
@@ -130,111 +153,198 @@ These tables are the source of truth for the tests. When turning rows into cases
 
 | # | P1 | PV | SoC State | Battery Discharging | Battery Charging | Device to grid | Notes |
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| 1 | 50 W | 0 W | EMPTY | 0 W | 0 W | 0 W | can't discharge, P1 unmatched |
-| 2 | 50 W | 0 W | FULL | 0 W | 0 W | 0 W | nothing to give |
-| 3 | 50 W | 0 W | not full | 50 W | 0 W | 50 W | pure battery discharge |
-| 4 | 50 W | 50 W | EMPTY | 0 W | 0 W | 50 W | solar covers P1 exactly, can't discharge |
-| 5 | 50 W | 50 W | FULL | 0 W | 0 W | 50 W | bypass matches P1 exactly |
-| 6 | 50 W | 50 W | not full | 0 W | 0 W | 50 W | solar covers P1 exactly, battery neutral |
-| 7 | 50 W | 200 W | EMPTY | 0 W | 150 W | 50 W | solar covers P1, 150 W excess charges battery |
-| 8 | 50 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass sends all solar to home |
-| 9 | 50 W | 200 W | not full | 0 W | 150 W | 50 W | PV excess charges battery, matches P1 |
-| 10 | 100 W | 0 W | EMPTY | 0 W | 0 W | 0 W | can't discharge, P1 unmatched |
-| 11 | 100 W | 0 W | FULL | 0 W | 0 W | 0 W | nothing to give |
-| 12 | 100 W | 0 W | not full | 100 W | 0 W | 100 W | pure battery discharge |
-| 13 | 100 W | 50 W | EMPTY | 0 W | 0 W | 50 W | partial match, solar only |
-| 14 | 100 W | 50 W | FULL | 0 W | 0 W | 50 W | bypass only, can't fully match P1 |
-| 15 | 100 W | 50 W | not full | 50 W | 0 W | 100 W | 50 W solar + 50 W battery = matches P1 |
-| 16 | 100 W | 100 W | EMPTY | 0 W | 0 W | 100 W | exact balance, battery neutral |
-| 17 | 100 W | 100 W | FULL | 0 W | 0 W | 100 W | bypass matches P1 exactly |
-| 18 | 100 W | 100 W | not full | 0 W | 0 W | 100 W | solar covers P1 exactly, battery neutral |
-| 19 | 100 W | 200 W | EMPTY | 0 W | 100 W | 100 W | solar covers P1, 100 W excess charges battery |
-| 20 | 100 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass sends all solar to home |
-| 21 | 100 W | 200 W | not full | 0 W | 100 W | 100 W | PV excess charges battery, matches P1 |
-| 22 | 100 W | 300 W | EMPTY | 0 W | 200 W | 100 W | solar covers P1, 200 W excess charges battery |
-| 23 | 100 W | 300 W | FULL | 0 W | 0 W | 300 W | bypass sends all solar to home |
-| 24 | 100 W | 300 W | not full | 0 W | 200 W | 100 W | 200 W PV excess charges battery, matches P1 |
-| 25 | 200 W | 0 W | EMPTY | 0 W | 0 W | 0 W | can't discharge, P1 unmatched |
-| 26 | 200 W | 0 W | FULL | 0 W | 0 W | 0 W | nothing to give |
-| 27 | 200 W | 0 W | not full | 200 W | 0 W | 200 W | pure battery discharge |
-| 28 | 200 W | 100 W | EMPTY | 0 W | 0 W | 100 W | can't discharge, solar only (100 W unmatched) |
-| 29 | 200 W | 100 W | FULL | 0 W | 0 W | 100 W | bypass only, partial match |
-| 30 | 200 W | 100 W | not full | 100 W | 0 W | 200 W | 100 W solar + 100 W battery = matches P1 |
-| 31 | 200 W | 200 W | EMPTY | 0 W | 0 W | 200 W | solar covers P1 exactly, can't discharge |
-| 32 | 200 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass matches P1 exactly |
-| 33 | 200 W | 200 W | not full | 0 W | 0 W | 200 W | solar covers P1 exactly, battery neutral |
-| 34 | 300 W | 0 W | EMPTY | 0 W | 0 W | 0 W | can't discharge, P1 unmatched |
-| 35 | 300 W | 0 W | FULL | 0 W | 0 W | 0 W | nothing to give |
-| 36 | 300 W | 0 W | not full | 300 W | 0 W | 300 W | high demand, pure battery |
-| 37 | 500 W | 200 W | EMPTY | 0 W | 0 W | 200 W | can't discharge, solar only |
-| 38 | 500 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass only, can't fully match P1 |
-| 39 | 500 W | 200 W | not full | 300 W | 0 W | 500 W | battery + solar combined |
-| 40 | 0 W | 0 W | EMPTY | 0 W | 0 W | 0 W | idle, nothing to do |
-| 41 | 0 W | 0 W | FULL | 0 W | 0 W | 0 W | idle, nothing to bypass |
-| 42 | 0 W | 0 W | not full | 0 W | 0 W | 0 W | everything idle |
-| 43 | 0 W | 200 W | EMPTY | 0 W | 200 W | 0 W | all solar stored in battery |
-| 44 | 0 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass passes solar to home |
-| 45 | 0 W | 200 W | not full | 0 W | 200 W | 0 W | all solar stored in battery |
-| 46 | −100 W | 0 W | EMPTY | 0 W | 0 W | 0 W | no own solar; can't charge from grid → P1 unmatched |
-| 47 | −100 W | 0 W | FULL | 0 W | 0 W | 0 W | battery full and no solar; can't charge from grid → P1 unmatched |
-| 48 | −100 W | 0 W | not full | 0 W | 0 W | 0 W | no own solar; can't charge from grid → P1 unmatched |
-| 49 | −100 W | 100 W | EMPTY | 0 W | 100 W | 0 W | solar stored in battery |
-| 50 | −100 W | 100 W | FULL | 0 W | 0 W | 100 W | bypass sends solar to home |
-| 51 | −100 W | 100 W | not full | 0 W | 100 W | 0 W | solar stored in battery |
-| 52 | −100 W | 200 W | EMPTY | 0 W | 200 W | 0 W | store all available solar; can't charge from grid |
-| 53 | −100 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass all solar to home |
-| 54 | −100 W | 200 W | not full | 0 W | 200 W | 0 W | store all available solar; can't charge from grid |
-| 55 | −300 W | 500 W | EMPTY | 0 W | 500 W | 0 W | store all available solar; can't charge from grid |
-| 56 | −300 W | 500 W | FULL | 0 W | 0 W | 500 W | bypass overrides, solar to home |
-| 57 | −300 W | 500 W | not full | 0 W | 500 W | 0 W | store all available solar; can't charge from grid |
+| 1 | -300 W | 0 W | any | 0 W | 0 W | 0 W | idle, nothing to do |
+| 2 | -300 W | 50 W | EMPTY | 0 W | 50 W | 0 W | all solar stored in battery |
+| 3 | -300 W | 50 W | FULL | 0 W | 0 W | 50 W | battery full: bypass all solar to home |
+| 4 | -300 W | 50 W | not full | 0 W | 50 W | 0 W | all solar stored in battery |
+| 5 | -300 W | 100 W | EMPTY | 0 W | 100 W | 0 W | all solar stored in battery |
+| 6 | -300 W | 100 W | FULL | 0 W | 0 W | 100 W | battery full: bypass all solar to home |
+| 7 | -300 W | 100 W | not full | 0 W | 100 W | 0 W | all solar stored in battery |
+| 8 | -300 W | 200 W | EMPTY | 0 W | 200 W | 0 W | all solar stored in battery |
+| 9 | -300 W | 200 W | FULL | 0 W | 0 W | 200 W | battery full: bypass all solar to home |
+| 10 | -300 W | 200 W | not full | 0 W | 200 W | 0 W | all solar stored in battery |
+| 11 | -300 W | 300 W | EMPTY | 0 W | 300 W | 0 W | all solar stored in battery |
+| 12 | -300 W | 300 W | FULL | 0 W | 0 W | 300 W | battery full: bypass all solar to home |
+| 13 | -300 W | 300 W | not full | 0 W | 300 W | 0 W | all solar stored in battery |
+| 14 | -300 W | 500 W | EMPTY | 0 W | 500 W | 0 W | store all available solar; can't charge from grid |
+| 15 | -300 W | 500 W | FULL | 0 W | 0 W | 500 W | bypass overrides, solar to home |
+| 16 | -300 W | 500 W | not full | 0 W | 500 W | 0 W | store all available solar; can't charge from grid |
+| 17 | -100 W | 0 W | any | 0 W | 0 W | 0 W | idle, nothing to do |
+| 18 | -100 W | 50 W | EMPTY | 0 W | 50 W | 0 W | all solar stored in battery |
+| 19 | -100 W | 50 W | FULL | 0 W | 0 W | 50 W | battery full: bypass all solar to home |
+| 20 | -100 W | 50 W | not full | 0 W | 50 W | 0 W | all solar stored in battery |
+| 21 | -100 W | 100 W | EMPTY | 0 W | 100 W | 0 W | solar stored in battery |
+| 22 | -100 W | 100 W | FULL | 0 W | 0 W | 100 W | bypass sends solar to home |
+| 23 | -100 W | 100 W | not full | 0 W | 100 W | 0 W | solar stored in battery |
+| 24 | -100 W | 200 W | EMPTY | 0 W | 200 W | 0 W | store all available solar; can't charge from grid |
+| 25 | -100 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass all solar to home |
+| 26 | -100 W | 200 W | not full | 0 W | 200 W | 0 W | store all available solar; can't charge from grid |
+| 27 | -100 W | 300 W | EMPTY | 0 W | 300 W | 0 W | all solar stored in battery |
+| 28 | -100 W | 300 W | FULL | 0 W | 0 W | 300 W | battery full: bypass all solar to home |
+| 29 | -100 W | 300 W | not full | 0 W | 300 W | 0 W | all solar stored in battery |
+| 30 | -100 W | 500 W | EMPTY | 0 W | 500 W | 0 W | all solar stored in battery |
+| 31 | -100 W | 500 W | FULL | 0 W | 0 W | 500 W | battery full: bypass all solar to home |
+| 32 | -100 W | 500 W | not full | 0 W | 500 W | 0 W | all solar stored in battery |
+| 33 | 0 W | 0 W | any | 0 W | 0 W | 0 W | idle, nothing to do |
+| 34 | 0 W | 50 W | EMPTY | 0 W | 50 W | 0 W | all solar stored in battery |
+| 35 | 0 W | 50 W | FULL | 0 W | 0 W | 50 W | battery full: bypass all solar to home |
+| 36 | 0 W | 50 W | not full | 0 W | 50 W | 0 W | all solar stored in battery |
+| 37 | 0 W | 100 W | EMPTY | 0 W | 100 W | 0 W | all solar stored in battery |
+| 38 | 0 W | 100 W | FULL | 0 W | 0 W | 100 W | battery full: bypass all solar to home |
+| 39 | 0 W | 100 W | not full | 0 W | 100 W | 0 W | all solar stored in battery |
+| 40 | 0 W | 200 W | EMPTY | 0 W | 200 W | 0 W | all solar stored in battery |
+| 41 | 0 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass passes solar to home |
+| 42 | 0 W | 200 W | not full | 0 W | 200 W | 0 W | all solar stored in battery |
+| 43 | 0 W | 300 W | EMPTY | 0 W | 300 W | 0 W | all solar stored in battery |
+| 44 | 0 W | 300 W | FULL | 0 W | 0 W | 300 W | battery full: bypass all solar to home |
+| 45 | 0 W | 300 W | not full | 0 W | 300 W | 0 W | all solar stored in battery |
+| 46 | 0 W | 500 W | EMPTY | 0 W | 500 W | 0 W | all solar stored in battery |
+| 47 | 0 W | 500 W | FULL | 0 W | 0 W | 500 W | battery full: bypass all solar to home |
+| 48 | 0 W | 500 W | not full | 0 W | 500 W | 0 W | all solar stored in battery |
+| 49 | 50 W | 0 W | EMPTY | 0 W | 0 W | 0 W | can't discharge, P1 unmatched |
+| 50 | 50 W | 0 W | FULL | 0 W | 0 W | 0 W | nothing to give |
+| 51 | 50 W | 0 W | not full | 50 W | 0 W | 50 W | pure battery discharge |
+| 52 | 50 W | 50 W | any | 0 W | 0 W | 50 W | solar passes to home, battery idle |
+| 53 | 50 W | 100 W | EMPTY | 0 W | 50 W | 50 W | surplus solar charges battery |
+| 54 | 50 W | 100 W | FULL | 0 W | 0 W | 100 W | battery full: bypass all solar to home |
+| 55 | 50 W | 100 W | not full | 0 W | 50 W | 50 W | surplus solar charges battery |
+| 56 | 50 W | 200 W | EMPTY | 0 W | 150 W | 50 W | solar covers P1, 150 W excess charges battery |
+| 57 | 50 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass sends all solar to home |
+| 58 | 50 W | 200 W | not full | 0 W | 150 W | 50 W | PV excess charges battery, matches P1 |
+| 59 | 50 W | 300 W | EMPTY | 0 W | 250 W | 50 W | surplus solar charges battery |
+| 60 | 50 W | 300 W | FULL | 0 W | 0 W | 300 W | battery full: bypass all solar to home |
+| 61 | 50 W | 300 W | not full | 0 W | 250 W | 50 W | surplus solar charges battery |
+| 62 | 50 W | 500 W | EMPTY | 0 W | 450 W | 50 W | surplus solar charges battery |
+| 63 | 50 W | 500 W | FULL | 0 W | 0 W | 500 W | battery full: bypass all solar to home |
+| 64 | 50 W | 500 W | not full | 0 W | 450 W | 50 W | surplus solar charges battery |
+| 65 | 100 W | 0 W | EMPTY | 0 W | 0 W | 0 W | can't discharge, P1 unmatched |
+| 66 | 100 W | 0 W | FULL | 0 W | 0 W | 0 W | nothing to give |
+| 67 | 100 W | 0 W | not full | 100 W | 0 W | 100 W | pure battery discharge |
+| 68 | 100 W | 50 W | EMPTY | 0 W | 0 W | 50 W | partial match, solar only |
+| 69 | 100 W | 50 W | FULL | 0 W | 0 W | 50 W | bypass only, can't fully match P1 |
+| 70 | 100 W | 50 W | not full | 50 W | 0 W | 100 W | 50 W solar + 50 W battery = matches P1 |
+| 71 | 100 W | 100 W | any | 0 W | 0 W | 100 W | solar passes to home, battery idle |
+| 72 | 100 W | 200 W | EMPTY | 0 W | 100 W | 100 W | solar covers P1, 100 W excess charges battery |
+| 73 | 100 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass sends all solar to home |
+| 74 | 100 W | 200 W | not full | 0 W | 100 W | 100 W | PV excess charges battery, matches P1 |
+| 75 | 100 W | 300 W | EMPTY | 0 W | 200 W | 100 W | solar covers P1, 200 W excess charges battery |
+| 76 | 100 W | 300 W | FULL | 0 W | 0 W | 300 W | bypass sends all solar to home |
+| 77 | 100 W | 300 W | not full | 0 W | 200 W | 100 W | 200 W PV excess charges battery, matches P1 |
+| 78 | 100 W | 500 W | EMPTY | 0 W | 400 W | 100 W | surplus solar charges battery |
+| 79 | 100 W | 500 W | FULL | 0 W | 0 W | 500 W | battery full: bypass all solar to home |
+| 80 | 100 W | 500 W | not full | 0 W | 400 W | 100 W | surplus solar charges battery |
+| 81 | 200 W | 0 W | EMPTY | 0 W | 0 W | 0 W | can't discharge, P1 unmatched |
+| 82 | 200 W | 0 W | FULL | 0 W | 0 W | 0 W | nothing to give |
+| 83 | 200 W | 0 W | not full | 200 W | 0 W | 200 W | pure battery discharge |
+| 84 | 200 W | 50 W | EMPTY | 0 W | 0 W | 50 W | solar passes to home, battery idle |
+| 85 | 200 W | 50 W | FULL | 0 W | 0 W | 50 W | battery full: bypass all solar to home |
+| 86 | 200 W | 50 W | not full | 150 W | 0 W | 200 W | solar + battery cover demand |
+| 87 | 200 W | 100 W | EMPTY | 0 W | 0 W | 100 W | can't discharge, solar only (100 W unmatched) |
+| 88 | 200 W | 100 W | FULL | 0 W | 0 W | 100 W | bypass only, partial match |
+| 89 | 200 W | 100 W | not full | 100 W | 0 W | 200 W | 100 W solar + 100 W battery = matches P1 |
+| 90 | 200 W | 200 W | any | 0 W | 0 W | 200 W | solar passes to home, battery idle |
+| 91 | 200 W | 300 W | EMPTY | 0 W | 100 W | 200 W | surplus solar charges battery |
+| 92 | 200 W | 300 W | FULL | 0 W | 0 W | 300 W | battery full: bypass all solar to home |
+| 93 | 200 W | 300 W | not full | 0 W | 100 W | 200 W | surplus solar charges battery |
+| 94 | 200 W | 500 W | EMPTY | 0 W | 300 W | 200 W | surplus solar charges battery |
+| 95 | 200 W | 500 W | FULL | 0 W | 0 W | 500 W | battery full: bypass all solar to home |
+| 96 | 200 W | 500 W | not full | 0 W | 300 W | 200 W | surplus solar charges battery |
+| 97 | 300 W | 0 W | EMPTY | 0 W | 0 W | 0 W | can't discharge, P1 unmatched |
+| 98 | 300 W | 0 W | FULL | 0 W | 0 W | 0 W | nothing to give |
+| 99 | 300 W | 0 W | not full | 300 W | 0 W | 300 W | high demand, pure battery |
+| 100 | 300 W | 50 W | EMPTY | 0 W | 0 W | 50 W | solar passes to home, battery idle |
+| 101 | 300 W | 50 W | FULL | 0 W | 0 W | 50 W | battery full: bypass all solar to home |
+| 102 | 300 W | 50 W | not full | 250 W | 0 W | 300 W | solar + battery cover demand |
+| 103 | 300 W | 100 W | EMPTY | 0 W | 0 W | 100 W | solar passes to home, battery idle |
+| 104 | 300 W | 100 W | FULL | 0 W | 0 W | 100 W | battery full: bypass all solar to home |
+| 105 | 300 W | 100 W | not full | 200 W | 0 W | 300 W | solar + battery cover demand |
+| 106 | 300 W | 200 W | EMPTY | 0 W | 0 W | 200 W | solar passes to home, battery idle |
+| 107 | 300 W | 200 W | FULL | 0 W | 0 W | 200 W | battery full: bypass all solar to home |
+| 108 | 300 W | 200 W | not full | 100 W | 0 W | 300 W | solar + battery cover demand |
+| 109 | 300 W | 300 W | any | 0 W | 0 W | 300 W | solar passes to home, battery idle |
+| 110 | 300 W | 500 W | EMPTY | 0 W | 200 W | 300 W | surplus solar charges battery |
+| 111 | 300 W | 500 W | FULL | 0 W | 0 W | 500 W | battery full: bypass all solar to home |
+| 112 | 300 W | 500 W | not full | 0 W | 200 W | 300 W | surplus solar charges battery |
+| 113 | 500 W | 0 W | EMPTY | 0 W | 0 W | 0 W | idle, nothing to do |
+| 114 | 500 W | 0 W | FULL | 0 W | 0 W | 0 W | idle, nothing to bypass |
+| 115 | 500 W | 0 W | not full | 500 W | 0 W | 500 W | pure battery discharge |
+| 116 | 500 W | 50 W | EMPTY | 0 W | 0 W | 50 W | solar passes to home, battery idle |
+| 117 | 500 W | 50 W | FULL | 0 W | 0 W | 50 W | battery full: bypass all solar to home |
+| 118 | 500 W | 50 W | not full | 450 W | 0 W | 500 W | solar + battery cover demand |
+| 119 | 500 W | 100 W | EMPTY | 0 W | 0 W | 100 W | solar passes to home, battery idle |
+| 120 | 500 W | 100 W | FULL | 0 W | 0 W | 100 W | battery full: bypass all solar to home |
+| 121 | 500 W | 100 W | not full | 400 W | 0 W | 500 W | solar + battery cover demand |
+| 122 | 500 W | 200 W | EMPTY | 0 W | 0 W | 200 W | can't discharge, solar only |
+| 123 | 500 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass only, can't fully match P1 |
+| 124 | 500 W | 200 W | not full | 300 W | 0 W | 500 W | battery + solar combined |
+| 125 | 500 W | 300 W | EMPTY | 0 W | 0 W | 300 W | solar passes to home, battery idle |
+| 126 | 500 W | 300 W | FULL | 0 W | 0 W | 300 W | battery full: bypass all solar to home |
+| 127 | 500 W | 300 W | not full | 200 W | 0 W | 500 W | solar + battery cover demand |
+| 128 | 500 W | 500 W | any | 0 W | 0 W | 500 W | solar passes to home, battery idle |
 
 
 ## MATCHING_DISCHARGE Mode — Power Mappings
 
 **Test data:** [`tests/manager_modes/matching_discharge.csv`](../tests/manager_modes/matching_discharge.csv)
 
-`max(0, setpoint)` — only discharges, **never** charges from grid. Negative P1 is clamped to 0. Devices discharge to cover P1 (using PV + battery) or stay idle. Solar always passes to home even when P1 = 0. FULL battery bypasses all solar. SOCEMPTY limits output to solar only.
+`max(self.produced, setpoint)` — only discharges, **never** charges (surplus solar is exported, not stored). Discharge is floored at `self.produced` (≥ 0), so all solar always passes to home and the battery only covers the gap when demand exceeds PV; a negative setpoint just yields solar-only. FULL battery bypasses all solar. SOCEMPTY limits output to solar only.
 
 | # | P1 | PV | SoC State | Battery Discharging | Battery Charging | Device to grid | Notes |
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| 1 | 100 W | 0 W | EMPTY | 0 W | 0 W | 0 W | can't discharge, P1 unmatched |
-| 2 | 100 W | 0 W | FULL | 0 W | 0 W | 0 W | nothing to give |
-| 3 | 100 W | 0 W | not full | 100 W | 0 W | 100 W | pure battery discharge |
-| 4 | 100 W | 50 W | EMPTY | 0 W | 0 W | 50 W | partial match, solar only |
-| 5 | 100 W | 50 W | FULL | 0 W | 0 W | 50 W | bypass only, partial match |
-| 6 | 100 W | 50 W | not full | 50 W | 0 W | 100 W | 50 W solar + 50 W battery = matches P1 |
-| 7 | 100 W | 100 W | EMPTY | 0 W | 0 W | 100 W | exact balance, battery neutral |
-| 8 | 100 W | 100 W | FULL | 0 W | 0 W | 100 W | bypass matches P1 exactly |
-| 9 | 100 W | 100 W | not full | 0 W | 0 W | 100 W | solar covers P1 exactly, battery neutral |
-| 10 | 100 W | 200 W | EMPTY | 0 W | 0 W | 200 W | solar passes to home, battery idle |
-| 11 | 100 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass sends all solar to home |
-| 12 | 100 W | 200 W | not full | 0 W | 0 W | 200 W | solar passes to home, battery idle (excess exported, not stored) |
-| 13 | 200 W | 0 W | EMPTY | 0 W | 0 W | 0 W | can't discharge, P1 unmatched |
-| 14 | 200 W | 0 W | FULL | 0 W | 0 W | 0 W | nothing to give |
-| 15 | 200 W | 0 W | not full | 200 W | 0 W | 200 W | pure battery discharge |
-| 16 | 200 W | 100 W | EMPTY | 0 W | 0 W | 100 W | can't discharge, solar only |
-| 17 | 200 W | 100 W | FULL | 0 W | 0 W | 100 W | bypass only, partial match |
-| 18 | 200 W | 100 W | not full | 100 W | 0 W | 200 W | 100 W solar + 100 W battery = matches P1 |
-| 19 | 200 W | 200 W | EMPTY | 0 W | 0 W | 200 W | solar covers P1 exactly, can't discharge |
-| 20 | 200 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass matches P1 exactly |
-| 21 | 200 W | 200 W | not full | 0 W | 0 W | 200 W | solar covers P1 exactly, battery neutral |
-| 22 | 300 W | 0 W | EMPTY | 0 W | 0 W | 0 W | can't discharge, P1 unmatched |
-| 23 | 300 W | 0 W | FULL | 0 W | 0 W | 0 W | nothing to give |
-| 24 | 300 W | 0 W | not full | 300 W | 0 W | 300 W | high demand, pure battery |
-| 25 | 500 W | 200 W | EMPTY | 0 W | 0 W | 200 W | can't discharge, solar only |
-| 26 | 500 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass only, can't fully match P1 |
-| 27 | 500 W | 200 W | not full | 300 W | 0 W | 500 W | battery + solar combined |
-| 28 | 0 W | 0 W | EMPTY | 0 W | 0 W | 0 W | idle, nothing to do |
-| 29 | 0 W | 0 W | FULL | 0 W | 0 W | 0 W | idle, nothing to bypass |
-| 30 | 0 W | 0 W | not full | 0 W | 0 W | 0 W | everything idle |
-| 31 | 0 W | 200 W | EMPTY | 0 W | 0 W | 200 W | solar passes to home, battery idle |
-| 32 | 0 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass passes solar to home |
-| 33 | 0 W | 200 W | not full | 0 W | 0 W | 200 W | solar passes to home |
-| 34 | −100 W | 0 W | any | 0 W | 0 W | 0 W | negative P1 clamped to 0, idle |
-| 35 | −100 W | 100 W | any | 0 W | 0 W | 100 W | solar passes to home, battery idle |
-| 36 | −100 W | 200 W | any | 0 W | 0 W | 200 W | solar passes to home, battery idle |
-| 37 | −300 W | 0 W | any | 0 W | 0 W | 0 W | negative P1 clamped to 0, idle |
-| 38 | −300 W | 200 W | any | 0 W | 0 W | 200 W | solar passes to home, battery idle |
+| 1 | -300 W | 0 W | any | 0 W | 0 W | 0 W | negative P1 clamped to 0, idle |
+| 2 | -300 W | 50 W | any | 0 W | 0 W | 50 W | solar passes to home, battery idle |
+| 3 | -300 W | 100 W | any | 0 W | 0 W | 100 W | solar passes to home, battery idle |
+| 4 | -300 W | 200 W | any | 0 W | 0 W | 200 W | solar passes to home, battery idle |
+| 5 | -100 W | 0 W | any | 0 W | 0 W | 0 W | negative P1 clamped to 0, idle |
+| 6 | -100 W | 50 W | any | 0 W | 0 W | 50 W | solar passes to home, battery idle |
+| 7 | -100 W | 100 W | any | 0 W | 0 W | 100 W | solar passes to home, battery idle |
+| 8 | -100 W | 200 W | any | 0 W | 0 W | 200 W | solar passes to home, battery idle |
+| 9 | 0 W | 0 W | any | 0 W | 0 W | 0 W | idle, nothing to do |
+| 10 | 0 W | 50 W | any | 0 W | 0 W | 50 W | solar passes to home, battery idle |
+| 11 | 0 W | 100 W | any | 0 W | 0 W | 100 W | solar passes to home, battery idle |
+| 12 | 0 W | 200 W | any | 0 W | 0 W | 200 W | solar passes to home, battery idle |
+| 13 | 100 W | 0 W | EMPTY | 0 W | 0 W | 0 W | can't discharge, P1 unmatched |
+| 14 | 100 W | 0 W | FULL | 0 W | 0 W | 0 W | nothing to give |
+| 15 | 100 W | 0 W | not full | 100 W | 0 W | 100 W | pure battery discharge |
+| 16 | 100 W | 50 W | EMPTY | 0 W | 0 W | 50 W | partial match, solar only |
+| 17 | 100 W | 50 W | FULL | 0 W | 0 W | 50 W | bypass only, partial match |
+| 18 | 100 W | 50 W | not full | 50 W | 0 W | 100 W | 50 W solar + 50 W battery = matches P1 |
+| 19 | 100 W | 100 W | any | 0 W | 0 W | 100 W | solar passes to home, battery idle |
+| 20 | 100 W | 200 W | any | 0 W | 0 W | 200 W | solar passes to home, battery idle |
+| 21 | 200 W | 0 W | EMPTY | 0 W | 0 W | 0 W | can't discharge, P1 unmatched |
+| 22 | 200 W | 0 W | FULL | 0 W | 0 W | 0 W | nothing to give |
+| 23 | 200 W | 0 W | not full | 200 W | 0 W | 200 W | pure battery discharge |
+| 24 | 200 W | 50 W | EMPTY | 0 W | 0 W | 50 W | solar passes to home, battery idle |
+| 25 | 200 W | 50 W | FULL | 0 W | 0 W | 50 W | battery full: bypass all solar to home |
+| 26 | 200 W | 50 W | not full | 150 W | 0 W | 200 W | solar + battery cover demand |
+| 27 | 200 W | 100 W | EMPTY | 0 W | 0 W | 100 W | can't discharge, solar only |
+| 28 | 200 W | 100 W | FULL | 0 W | 0 W | 100 W | bypass only, partial match |
+| 29 | 200 W | 100 W | not full | 100 W | 0 W | 200 W | 100 W solar + 100 W battery = matches P1 |
+| 30 | 200 W | 200 W | any | 0 W | 0 W | 200 W | solar passes to home, battery idle |
+| 31 | 300 W | 0 W | EMPTY | 0 W | 0 W | 0 W | can't discharge, P1 unmatched |
+| 32 | 300 W | 0 W | FULL | 0 W | 0 W | 0 W | nothing to give |
+| 33 | 300 W | 0 W | not full | 300 W | 0 W | 300 W | high demand, pure battery |
+| 34 | 300 W | 50 W | EMPTY | 0 W | 0 W | 50 W | solar passes to home, battery idle |
+| 35 | 300 W | 50 W | FULL | 0 W | 0 W | 50 W | battery full: bypass all solar to home |
+| 36 | 300 W | 50 W | not full | 250 W | 0 W | 300 W | solar + battery cover demand |
+| 37 | 300 W | 100 W | EMPTY | 0 W | 0 W | 100 W | solar passes to home, battery idle |
+| 38 | 300 W | 100 W | FULL | 0 W | 0 W | 100 W | battery full: bypass all solar to home |
+| 39 | 300 W | 100 W | not full | 200 W | 0 W | 300 W | solar + battery cover demand |
+| 40 | 300 W | 200 W | EMPTY | 0 W | 0 W | 200 W | solar passes to home, battery idle |
+| 41 | 300 W | 200 W | FULL | 0 W | 0 W | 200 W | battery full: bypass all solar to home |
+| 42 | 300 W | 200 W | not full | 100 W | 0 W | 300 W | solar + battery cover demand |
+| 43 | 500 W | 0 W | EMPTY | 0 W | 0 W | 0 W | idle, nothing to do |
+| 44 | 500 W | 0 W | FULL | 0 W | 0 W | 0 W | idle, nothing to bypass |
+| 45 | 500 W | 0 W | not full | 500 W | 0 W | 500 W | pure battery discharge |
+| 46 | 500 W | 50 W | EMPTY | 0 W | 0 W | 50 W | solar passes to home, battery idle |
+| 47 | 500 W | 50 W | FULL | 0 W | 0 W | 50 W | battery full: bypass all solar to home |
+| 48 | 500 W | 50 W | not full | 450 W | 0 W | 500 W | solar + battery cover demand |
+| 49 | 500 W | 100 W | EMPTY | 0 W | 0 W | 100 W | solar passes to home, battery idle |
+| 50 | 500 W | 100 W | FULL | 0 W | 0 W | 100 W | battery full: bypass all solar to home |
+| 51 | 500 W | 100 W | not full | 400 W | 0 W | 500 W | solar + battery cover demand |
+| 52 | 500 W | 200 W | EMPTY | 0 W | 0 W | 200 W | can't discharge, solar only |
+| 53 | 500 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass only, can't fully match P1 |
+| 54 | 500 W | 200 W | not full | 300 W | 0 W | 500 W | battery + solar combined |
 
 
 ## MATCHING_CHARGE Mode — Power Mappings
@@ -245,42 +355,80 @@ These tables are the source of truth for the tests. When turning rows into cases
 
 | # | P1 | PV | SoC State | Battery Discharging | Battery Charging | Device to grid | Notes |
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| 1 | 100 W | 0 W | any | 0 W | 0 W | 0 W | no solar, battery preserved — P1 unmatched |
-| 2 | 100 W | 100 W | EMPTY | 0 W | 0 W | 100 W | exact balance, battery neutral |
-| 3 | 100 W | 100 W | FULL | 0 W | 0 W | 100 W | bypass matches P1 exactly |
-| 4 | 100 W | 100 W | not full | 0 W | 0 W | 100 W | exact balance, battery neutral |
-| 5 | 100 W | 200 W | EMPTY | 0 W | 100 W | 100 W | solar covers P1, 100 W excess charges battery |
-| 6 | 100 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass sends all solar to home |
-| 7 | 100 W | 200 W | not full | 0 W | 100 W | 100 W | solar covers P1, 100 W excess charges battery |
-| 8 | 100 W | 300 W | EMPTY | 0 W | 200 W | 100 W | solar covers P1, 200 W excess charges battery |
-| 9 | 100 W | 300 W | FULL | 0 W | 0 W | 300 W | bypass sends all solar to home |
-| 10 | 100 W | 300 W | not full | 0 W | 200 W | 100 W | solar covers P1, 200 W excess charges battery |
-| 11 | 100 W | 50 W | EMPTY | 0 W | 0 W | 50 W | solar only, battery does NOT discharge to cover gap |
-| 12 | 100 W | 50 W | FULL | 0 W | 0 W | 50 W | bypass only, partial match |
-| 13 | 100 W | 50 W | not full | 0 W | 0 W | 50 W | solar only, battery does NOT discharge to cover gap |
-| 14 | 300 W | 200 W | EMPTY | 0 W | 0 W | 200 W | solar only, battery does NOT discharge, 100 W gap |
-| 15 | 300 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass only, battery preserved |
-| 16 | 300 W | 200 W | not full | 0 W | 0 W | 200 W | solar only, battery preserved, 100 W gap |
-| 17 | 500 W | 200 W | EMPTY | 0 W | 0 W | 200 W | solar only, battery does NOT discharge, 300 W gap |
-| 18 | 500 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass only, large gap |
-| 19 | 500 W | 200 W | not full | 0 W | 0 W | 200 W | solar only, battery preserved, 300 W gap |
-| 20 | 0 W | 0 W | any | 0 W | 0 W | 0 W | everything idle |
-| 21 | 0 W | 200 W | EMPTY | 0 W | 200 W | 0 W | all solar charges battery |
-| 22 | 0 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass passes solar to home |
-| 23 | 0 W | 200 W | not full | 0 W | 200 W | 0 W | all solar stored in battery |
-| 24 | -100 W | 100 W | EMPTY | 0 W | 100 W | 0 W | solar stored in battery |
-| 25 | -100 W | 200 W | EMPTY | 0 W | 200 W | 0 W | all solar stored in battery |
-| 26 | -300 W | 200 W | EMPTY | 0 W | 200 W | 0 W | charge capped at available solar |
-| 27 | -300 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass overrides, solar to home |
-| 28 | -300 W | 500 W | EMPTY | 0 W | 500 W | 0 W | charge from all available solar |
-| 29 | −100 W | 0 W | any | 0 W | 0 W | 0 W | nothing to charge from |
-| 30 | −100 W | 100 W | FULL | 0 W | 0 W | 100 W | bypass sends solar to home |
-| 31 | −100 W | 100 W | not full | 0 W | 100 W | 0 W | solar stored in battery |
-| 32 | −100 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass all solar to home |
-| 33 | −100 W | 200 W | not full | 0 W | 200 W | 0 W | all solar stored in battery |
-| 34 | −300 W | 200 W | not full | 0 W | 200 W | 0 W | charge capped at available solar |
-| 35 | −300 W | 500 W | FULL | 0 W | 0 W | 500 W | bypass overrides, solar to home |
-| 36 | −300 W | 500 W | not full | 0 W | 500 W | 0 W | charge from all available solar |
+| 1 | -300 W | 0 W | any | 0 W | 0 W | 0 W | idle, nothing to do |
+| 2 | -300 W | 50 W | EMPTY | 0 W | 50 W | 0 W | all solar stored in battery |
+| 3 | -300 W | 50 W | FULL | 0 W | 0 W | 50 W | battery full: bypass all solar to home |
+| 4 | -300 W | 50 W | not full | 0 W | 50 W | 0 W | all solar stored in battery |
+| 5 | -300 W | 100 W | EMPTY | 0 W | 100 W | 0 W | all solar stored in battery |
+| 6 | -300 W | 100 W | FULL | 0 W | 0 W | 100 W | battery full: bypass all solar to home |
+| 7 | -300 W | 100 W | not full | 0 W | 100 W | 0 W | all solar stored in battery |
+| 8 | -300 W | 200 W | EMPTY | 0 W | 200 W | 0 W | charge capped at available solar |
+| 9 | -300 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass overrides, solar to home |
+| 10 | -300 W | 200 W | not full | 0 W | 200 W | 0 W | charge capped at available solar |
+| 11 | -300 W | 300 W | EMPTY | 0 W | 300 W | 0 W | all solar stored in battery |
+| 12 | -300 W | 300 W | FULL | 0 W | 0 W | 300 W | battery full: bypass all solar to home |
+| 13 | -300 W | 300 W | not full | 0 W | 300 W | 0 W | all solar stored in battery |
+| 14 | -300 W | 500 W | EMPTY | 0 W | 500 W | 0 W | charge from all available solar |
+| 15 | -300 W | 500 W | FULL | 0 W | 0 W | 500 W | bypass overrides, solar to home |
+| 16 | -300 W | 500 W | not full | 0 W | 500 W | 0 W | charge from all available solar |
+| 17 | -100 W | 0 W | any | 0 W | 0 W | 0 W | nothing to charge from |
+| 18 | -100 W | 50 W | EMPTY | 0 W | 50 W | 0 W | all solar stored in battery |
+| 19 | -100 W | 50 W | FULL | 0 W | 0 W | 50 W | battery full: bypass all solar to home |
+| 20 | -100 W | 50 W | not full | 0 W | 50 W | 0 W | all solar stored in battery |
+| 21 | -100 W | 100 W | EMPTY | 0 W | 100 W | 0 W | solar stored in battery |
+| 22 | -100 W | 100 W | FULL | 0 W | 0 W | 100 W | bypass sends solar to home |
+| 23 | -100 W | 100 W | not full | 0 W | 100 W | 0 W | solar stored in battery |
+| 24 | -100 W | 200 W | EMPTY | 0 W | 200 W | 0 W | all solar stored in battery |
+| 25 | -100 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass all solar to home |
+| 26 | -100 W | 200 W | not full | 0 W | 200 W | 0 W | all solar stored in battery |
+| 27 | -100 W | 300 W | EMPTY | 0 W | 300 W | 0 W | all solar stored in battery |
+| 28 | -100 W | 300 W | FULL | 0 W | 0 W | 300 W | battery full: bypass all solar to home |
+| 29 | -100 W | 300 W | not full | 0 W | 300 W | 0 W | all solar stored in battery |
+| 30 | -100 W | 500 W | EMPTY | 0 W | 500 W | 0 W | all solar stored in battery |
+| 31 | -100 W | 500 W | FULL | 0 W | 0 W | 500 W | battery full: bypass all solar to home |
+| 32 | -100 W | 500 W | not full | 0 W | 500 W | 0 W | all solar stored in battery |
+| 33 | 0 W | 0 W | any | 0 W | 0 W | 0 W | everything idle |
+| 34 | 0 W | 50 W | EMPTY | 0 W | 50 W | 0 W | all solar stored in battery |
+| 35 | 0 W | 50 W | FULL | 0 W | 0 W | 50 W | battery full: bypass all solar to home |
+| 36 | 0 W | 50 W | not full | 0 W | 50 W | 0 W | all solar stored in battery |
+| 37 | 0 W | 100 W | EMPTY | 0 W | 100 W | 0 W | all solar stored in battery |
+| 38 | 0 W | 100 W | FULL | 0 W | 0 W | 100 W | battery full: bypass all solar to home |
+| 39 | 0 W | 100 W | not full | 0 W | 100 W | 0 W | all solar stored in battery |
+| 40 | 0 W | 200 W | EMPTY | 0 W | 200 W | 0 W | all solar charges battery |
+| 41 | 0 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass passes solar to home |
+| 42 | 0 W | 200 W | not full | 0 W | 200 W | 0 W | all solar stored in battery |
+| 43 | 0 W | 300 W | EMPTY | 0 W | 300 W | 0 W | all solar stored in battery |
+| 44 | 0 W | 300 W | FULL | 0 W | 0 W | 300 W | battery full: bypass all solar to home |
+| 45 | 0 W | 300 W | not full | 0 W | 300 W | 0 W | all solar stored in battery |
+| 46 | 0 W | 500 W | EMPTY | 0 W | 500 W | 0 W | all solar stored in battery |
+| 47 | 0 W | 500 W | FULL | 0 W | 0 W | 500 W | battery full: bypass all solar to home |
+| 48 | 0 W | 500 W | not full | 0 W | 500 W | 0 W | all solar stored in battery |
+| 49 | 100 W | 0 W | any | 0 W | 0 W | 0 W | no solar, battery preserved — P1 unmatched |
+| 50 | 100 W | 50 W | any | 0 W | 0 W | 50 W | solar passes to home, battery idle |
+| 51 | 100 W | 100 W | any | 0 W | 0 W | 100 W | solar passes to home, battery idle |
+| 52 | 100 W | 200 W | EMPTY | 0 W | 100 W | 100 W | solar covers P1, 100 W excess charges battery |
+| 53 | 100 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass sends all solar to home |
+| 54 | 100 W | 200 W | not full | 0 W | 100 W | 100 W | solar covers P1, 100 W excess charges battery |
+| 55 | 100 W | 300 W | EMPTY | 0 W | 200 W | 100 W | solar covers P1, 200 W excess charges battery |
+| 56 | 100 W | 300 W | FULL | 0 W | 0 W | 300 W | bypass sends all solar to home |
+| 57 | 100 W | 300 W | not full | 0 W | 200 W | 100 W | solar covers P1, 200 W excess charges battery |
+| 58 | 100 W | 500 W | EMPTY | 0 W | 400 W | 100 W | surplus solar charges battery |
+| 59 | 100 W | 500 W | FULL | 0 W | 0 W | 500 W | battery full: bypass all solar to home |
+| 60 | 100 W | 500 W | not full | 0 W | 400 W | 100 W | surplus solar charges battery |
+| 61 | 300 W | 0 W | any | 0 W | 0 W | 0 W | idle, nothing to do |
+| 62 | 300 W | 50 W | any | 0 W | 0 W | 50 W | solar passes to home, battery idle |
+| 63 | 300 W | 100 W | any | 0 W | 0 W | 100 W | solar passes to home, battery idle |
+| 64 | 300 W | 200 W | any | 0 W | 0 W | 200 W | solar passes to home, battery idle |
+| 65 | 300 W | 300 W | any | 0 W | 0 W | 300 W | solar passes to home, battery idle |
+| 66 | 300 W | 500 W | EMPTY | 0 W | 200 W | 300 W | surplus solar charges battery |
+| 67 | 300 W | 500 W | FULL | 0 W | 0 W | 500 W | battery full: bypass all solar to home |
+| 68 | 300 W | 500 W | not full | 0 W | 200 W | 300 W | surplus solar charges battery |
+| 69 | 500 W | 0 W | any | 0 W | 0 W | 0 W | idle, nothing to do |
+| 70 | 500 W | 50 W | any | 0 W | 0 W | 50 W | solar passes to home, battery idle |
+| 71 | 500 W | 100 W | any | 0 W | 0 W | 100 W | solar passes to home, battery idle |
+| 72 | 500 W | 200 W | any | 0 W | 0 W | 200 W | solar passes to home, battery idle |
+| 73 | 500 W | 300 W | any | 0 W | 0 W | 300 W | solar passes to home, battery idle |
+| 74 | 500 W | 500 W | any | 0 W | 0 W | 500 W | solar passes to home, battery idle |
 
 ## STORE_SOLAR Mode — Power Mappings
 
@@ -290,36 +438,83 @@ These tables are the source of truth for the tests. When turning rows into cases
 
 | # | P1 | PV | SoC State | Battery Discharging | Battery Charging | Device to grid | Notes |
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| 1 | 100 W | 0 W | any | 0 W | 0 W | 0 W | no solar, everything idle |
-| 2 | 100 W | 200 W | EMPTY | 0 W | 200 W | 0 W | solar charges empty battery |
-| 3 | 100 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass sends all solar to home |
-| 4 | 100 W | 200 W | not full | 0 W | 200 W | 0 W | all solar stored, nothing to home |
-| 5 | 100 W | 300 W | EMPTY | 0 W | 300 W | 0 W | all solar stored in battery |
-| 6 | 100 W | 300 W | FULL | 0 W | 0 W | 300 W | bypass sends all solar to home |
-| 7 | 100 W | 300 W | not full | 0 W | 300 W | 0 W | all solar stored, P1 unmatched |
-| 8 | 100 W | 50 W | EMPTY | 0 W | 50 W | 0 W | all solar stored in battery |
-| 9 | 100 W | 50 W | FULL | 0 W | 0 W | 50 W | bypass only |
-| 10 | 100 W | 50 W | not full | 0 W | 50 W | 0 W | all solar stored, nothing to home |
-| 11 | 100 W | 500 W | EMPTY | 0 W | 500 W | 0 W | all solar stored in battery |
-| 12 | 100 W | 500 W | FULL | 0 W | 0 W | 500 W | bypass sends all solar to home |
-| 13 | 100 W | 500 W | not full | 0 W | 500 W | 0 W | all solar stored, P1 unmatched |
-| 14 | 300 W | 200 W | EMPTY | 0 W | 200 W | 0 W | all solar stored in battery |
-| 15 | 300 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass only |
-| 16 | 300 W | 200 W | not full | 0 W | 200 W | 0 W | all solar stored, P1 unmatched |
-| 17 | 0 W | 0 W | any | 0 W | 0 W | 0 W | everything idle |
-| 18 | 0 W | 200 W | EMPTY | 0 W | 200 W | 0 W | solar charges empty battery |
-| 19 | 0 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass passes solar to home |
-| 20 | 0 W | 200 W | not full | 0 W | 200 W | 0 W | all solar stored in battery |
+| 1 | -300 W | 0 W | any | 0 W | 0 W | 0 W | idle, nothing to do |
+| 2 | -300 W | 50 W | EMPTY | 0 W | 50 W | 0 W | all solar stored in battery |
+| 3 | -300 W | 50 W | FULL | 0 W | 0 W | 50 W | battery full: bypass all solar to home |
+| 4 | -300 W | 50 W | not full | 0 W | 50 W | 0 W | all solar stored in battery |
+| 5 | -300 W | 100 W | EMPTY | 0 W | 100 W | 0 W | all solar stored in battery |
+| 6 | -300 W | 100 W | FULL | 0 W | 0 W | 100 W | battery full: bypass all solar to home |
+| 7 | -300 W | 100 W | not full | 0 W | 100 W | 0 W | all solar stored in battery |
+| 8 | -300 W | 200 W | EMPTY | 0 W | 200 W | 0 W | charge capped at available solar |
+| 9 | -300 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass overrides, solar to home |
+| 10 | -300 W | 200 W | not full | 0 W | 200 W | 0 W | charge capped at available solar |
+| 11 | -300 W | 300 W | EMPTY | 0 W | 300 W | 0 W | all solar stored in battery |
+| 12 | -300 W | 300 W | FULL | 0 W | 0 W | 300 W | battery full: bypass all solar to home |
+| 13 | -300 W | 300 W | not full | 0 W | 300 W | 0 W | all solar stored in battery |
+| 14 | -300 W | 500 W | EMPTY | 0 W | 500 W | 0 W | charge from all available solar |
+| 15 | -300 W | 500 W | FULL | 0 W | 0 W | 500 W | bypass overrides, solar to home |
+| 16 | -300 W | 500 W | not full | 0 W | 500 W | 0 W | charge from all available solar |
+| 17 | -100 W | 0 W | any | 0 W | 0 W | 0 W | nothing to charge from |
+| 18 | -100 W | 50 W | EMPTY | 0 W | 50 W | 0 W | all solar stored in battery |
+| 19 | -100 W | 50 W | FULL | 0 W | 0 W | 50 W | battery full: bypass all solar to home |
+| 20 | -100 W | 50 W | not full | 0 W | 50 W | 0 W | all solar stored in battery |
 | 21 | -100 W | 100 W | EMPTY | 0 W | 100 W | 0 W | solar stored in battery |
-| 22 | -100 W | 200 W | EMPTY | 0 W | 200 W | 0 W | all solar stored in battery |
-| 23 | -300 W | 200 W | EMPTY | 0 W | 200 W | 0 W | charge capped at available solar |
-| 24 | -300 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass overrides, solar to home |
-| 25 | -300 W | 500 W | EMPTY | 0 W | 500 W | 0 W | charge from all available solar |
-| 26 | −100 W | 0 W | any | 0 W | 0 W | 0 W | nothing to charge from |
-| 27 | −100 W | 100 W | FULL | 0 W | 0 W | 100 W | bypass sends solar to home |
-| 28 | −100 W | 100 W | not full | 0 W | 100 W | 0 W | solar stored in battery |
-| 29 | −100 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass all solar to home |
-| 30 | −100 W | 200 W | not full | 0 W | 200 W | 0 W | all solar stored in battery |
-| 31 | −300 W | 200 W | not full | 0 W | 200 W | 0 W | charge capped at available solar |
-| 32 | −300 W | 500 W | FULL | 0 W | 0 W | 500 W | bypass overrides, solar to home |
-| 33 | −300 W | 500 W | not full | 0 W | 500 W | 0 W | charge from all available solar |
+| 22 | -100 W | 100 W | FULL | 0 W | 0 W | 100 W | bypass sends solar to home |
+| 23 | -100 W | 100 W | not full | 0 W | 100 W | 0 W | solar stored in battery |
+| 24 | -100 W | 200 W | EMPTY | 0 W | 200 W | 0 W | all solar stored in battery |
+| 25 | -100 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass all solar to home |
+| 26 | -100 W | 200 W | not full | 0 W | 200 W | 0 W | all solar stored in battery |
+| 27 | -100 W | 300 W | EMPTY | 0 W | 300 W | 0 W | all solar stored in battery |
+| 28 | -100 W | 300 W | FULL | 0 W | 0 W | 300 W | battery full: bypass all solar to home |
+| 29 | -100 W | 300 W | not full | 0 W | 300 W | 0 W | all solar stored in battery |
+| 30 | -100 W | 500 W | EMPTY | 0 W | 500 W | 0 W | all solar stored in battery |
+| 31 | -100 W | 500 W | FULL | 0 W | 0 W | 500 W | battery full: bypass all solar to home |
+| 32 | -100 W | 500 W | not full | 0 W | 500 W | 0 W | all solar stored in battery |
+| 33 | 0 W | 0 W | any | 0 W | 0 W | 0 W | everything idle |
+| 34 | 0 W | 50 W | EMPTY | 0 W | 50 W | 0 W | all solar stored in battery |
+| 35 | 0 W | 50 W | FULL | 0 W | 0 W | 50 W | battery full: bypass all solar to home |
+| 36 | 0 W | 50 W | not full | 0 W | 50 W | 0 W | all solar stored in battery |
+| 37 | 0 W | 100 W | EMPTY | 0 W | 100 W | 0 W | all solar stored in battery |
+| 38 | 0 W | 100 W | FULL | 0 W | 0 W | 100 W | battery full: bypass all solar to home |
+| 39 | 0 W | 100 W | not full | 0 W | 100 W | 0 W | all solar stored in battery |
+| 40 | 0 W | 200 W | EMPTY | 0 W | 200 W | 0 W | solar charges empty battery |
+| 41 | 0 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass passes solar to home |
+| 42 | 0 W | 200 W | not full | 0 W | 200 W | 0 W | all solar stored in battery |
+| 43 | 0 W | 300 W | EMPTY | 0 W | 300 W | 0 W | all solar stored in battery |
+| 44 | 0 W | 300 W | FULL | 0 W | 0 W | 300 W | battery full: bypass all solar to home |
+| 45 | 0 W | 300 W | not full | 0 W | 300 W | 0 W | all solar stored in battery |
+| 46 | 0 W | 500 W | EMPTY | 0 W | 500 W | 0 W | all solar stored in battery |
+| 47 | 0 W | 500 W | FULL | 0 W | 0 W | 500 W | battery full: bypass all solar to home |
+| 48 | 0 W | 500 W | not full | 0 W | 500 W | 0 W | all solar stored in battery |
+| 49 | 100 W | 0 W | any | 0 W | 0 W | 0 W | no solar, everything idle |
+| 50 | 100 W | 50 W | EMPTY | 0 W | 50 W | 0 W | all solar stored in battery |
+| 51 | 100 W | 50 W | FULL | 0 W | 0 W | 50 W | bypass only |
+| 52 | 100 W | 50 W | not full | 0 W | 50 W | 0 W | all solar stored, nothing to home |
+| 53 | 100 W | 100 W | EMPTY | 0 W | 100 W | 0 W | all solar stored in battery |
+| 54 | 100 W | 100 W | FULL | 0 W | 0 W | 100 W | battery full: bypass all solar to home |
+| 55 | 100 W | 100 W | not full | 0 W | 100 W | 0 W | all solar stored in battery |
+| 56 | 100 W | 200 W | EMPTY | 0 W | 200 W | 0 W | solar charges empty battery |
+| 57 | 100 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass sends all solar to home |
+| 58 | 100 W | 200 W | not full | 0 W | 200 W | 0 W | all solar stored, nothing to home |
+| 59 | 100 W | 300 W | EMPTY | 0 W | 300 W | 0 W | all solar stored in battery |
+| 60 | 100 W | 300 W | FULL | 0 W | 0 W | 300 W | bypass sends all solar to home |
+| 61 | 100 W | 300 W | not full | 0 W | 300 W | 0 W | all solar stored, P1 unmatched |
+| 62 | 100 W | 500 W | EMPTY | 0 W | 500 W | 0 W | all solar stored in battery |
+| 63 | 100 W | 500 W | FULL | 0 W | 0 W | 500 W | bypass sends all solar to home |
+| 64 | 100 W | 500 W | not full | 0 W | 500 W | 0 W | all solar stored, P1 unmatched |
+| 65 | 300 W | 0 W | any | 0 W | 0 W | 0 W | idle, nothing to do |
+| 66 | 300 W | 50 W | EMPTY | 0 W | 50 W | 0 W | all solar stored in battery |
+| 67 | 300 W | 50 W | FULL | 0 W | 0 W | 50 W | battery full: bypass all solar to home |
+| 68 | 300 W | 50 W | not full | 0 W | 50 W | 0 W | all solar stored in battery |
+| 69 | 300 W | 100 W | EMPTY | 0 W | 100 W | 0 W | all solar stored in battery |
+| 70 | 300 W | 100 W | FULL | 0 W | 0 W | 100 W | battery full: bypass all solar to home |
+| 71 | 300 W | 100 W | not full | 0 W | 100 W | 0 W | all solar stored in battery |
+| 72 | 300 W | 200 W | EMPTY | 0 W | 200 W | 0 W | all solar stored in battery |
+| 73 | 300 W | 200 W | FULL | 0 W | 0 W | 200 W | bypass only |
+| 74 | 300 W | 200 W | not full | 0 W | 200 W | 0 W | all solar stored, P1 unmatched |
+| 75 | 300 W | 300 W | EMPTY | 0 W | 300 W | 0 W | all solar stored in battery |
+| 76 | 300 W | 300 W | FULL | 0 W | 0 W | 300 W | battery full: bypass all solar to home |
+| 77 | 300 W | 300 W | not full | 0 W | 300 W | 0 W | all solar stored in battery |
+| 78 | 300 W | 500 W | EMPTY | 0 W | 500 W | 0 W | all solar stored in battery |
+| 79 | 300 W | 500 W | FULL | 0 W | 0 W | 500 W | battery full: bypass all solar to home |
+| 80 | 300 W | 500 W | not full | 0 W | 500 W | 0 W | all solar stored in battery |

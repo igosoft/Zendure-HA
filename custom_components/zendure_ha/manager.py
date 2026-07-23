@@ -597,7 +597,7 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
         discharging_mode = self.operation in DISCHARGE_MODES
 
         # distribute discharging devices, use produced power first, before adding another device
-        dev_start = max(0, setpoint - self.discharge_optimal * 2 - self.discharge_produced) if setpoint > SmartMode.POWER_START else 0
+        dev_start = max(0, setpoint - self.discharge_optimal * 2 - self.discharge_produced) if setpoint >= SmartMode.POWER_START else 0
         solaronly = self.discharge_produced >= setpoint
         limit = self.discharge_produced if solaronly else self.discharge_limit
         setpoint = min(limit, setpoint)
