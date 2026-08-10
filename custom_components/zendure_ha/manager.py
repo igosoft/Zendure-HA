@@ -26,6 +26,7 @@ from homeassistant.loader import async_get_integration
 
 from .api import Api
 from .const import (
+    AcMode,
     CONF_AUTO_MQTT_USER,
     CONF_P1METER,
     DOMAIN,
@@ -445,18 +446,15 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
                     setpoint -= min(d.homeInput.asInt, d.batteryInput.asInt)
                 # SOCEMPTY means, it could not discharge the battery, but it is still possible to feed into the home using solarpower or offGrid
                 elif (home := d.homeOutput.asInt) > 0:
-                    self.discharge.append(d)
-                    # Cap the bypass at the homeOutput actually added to the setpoint for this
-                    # device: pwr_produced can exceed homeOutput (internal trickle charge, sensor
-                    # skew), and subtracting more than was added fabricates a phantom negative
-                    # setpoint — the root cause of #1151.
                     if d.state == DeviceState.SOCFULL and d.exports_bypass:
-                        self.discharge_bypass += min(-d.pwr_produced, home)
-                    self.discharge_limit += d.fuseGrp.discharge_limit(d)
-                    self.discharge_optimal += d.discharge_optimal
-                    self.discharge_produced -= d.pwr_produced
-                    self.discharge_weight += d.pwr_max * d.electricLevel.asInt
-                    setpoint += home
+                        pass
+                    else:
+                        self.discharge.append(d)
+                        self.discharge_limit += d.fuseGrp.discharge_limit(d)
+                        self.discharge_optimal += d.discharge_optimal
+                        self.discharge_produced -= d.pwr_produced
+                        self.discharge_weight += d.pwr_max * d.electricLevel.asInt
+                        setpoint += home
 
                 else:
                     self.idle.append(d)
@@ -472,14 +470,6 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
         self.power.update_value(power)
         self.availableKwh.update_value(availableKwh)
         self.globalSoc.update_value((totalStoredkWh / onlinekWh * 100) if onlinekWh > 0 else 0)
-
-        # Bypass production of SOCFULL devices is non-dispatchable: it keeps flowing
-        # to the home regardless of the distribution (power_charge skips devices with
-        # byPass > 0). Remove it from the dispatchable setpoint. Because the per-device
-        # bypass is capped at its homeOutput contribution, this subtraction can never
-        # push the setpoint below "p1 - real charge credits": with no device charging
-        # and p1 >= 0, the result stays >= 0 — the #1151 guarantee holds structurally.
-        setpoint -= self.discharge_bypass
 
         # Update power distribution.
         _LOGGER.info("P1 ======> p1:%s isFast:%s, setpoint:%sW stored:%sW", p1, isFast, setpoint, self.produced)
