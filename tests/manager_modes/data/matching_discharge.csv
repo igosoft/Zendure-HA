@@ -59,3 +59,4 @@ case,mode,input_w,pv_w,soc,battery_discharging_w,battery_charging_w,device_to_gr
 204,MATCHING_DISCHARGE,300,0,not full,300,0,300,0,not full,0,0,0,75,25,,,,,,"explicit levels: dev2's 75W share is below the optimal range (180W), load consolidates on dev1"
 205,MATCHING_DISCHARGE,-100,200,FULL,0,0,200,100,not full,200,0,300,,,,,,,,surplus distributed to dev2 under #1565 dispatchable logic: 100W solar + 200W battery
 206,MATCHING_DISCHARGE,300,200,FULL,0,0,200,0,not full,200,0,200,,,,,,,,bypass added back and dev2 covers the remainder under #1565 (#1559)
+207,MATCHING_DISCHARGE,1000,0,not full,800,0,800,0,not full,200,0,200,80,20,,,,,,pure battery-budget SoC-weighted split, no PV: 80/20 SoC -> 800/200W
