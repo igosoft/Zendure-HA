@@ -30,6 +30,7 @@ class _FakeDevice:
     """Minimal stand-in exposing only what power_charge/power_discharge touch."""
 
     def __init__(self, *, pwr_max: int, electric_level: int, state: DeviceState = DeviceState.INACTIVE) -> None:
+        self.name = "dev"
         self.pwr_max = pwr_max
         self.electricLevel = SimpleNamespace(asInt=electric_level)
         self.byPass = SimpleNamespace(asInt=0)

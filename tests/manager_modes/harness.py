@@ -119,7 +119,7 @@ class FakeDevice:
     def __init__(self, soc_state: DeviceState, level: int, pv: int,
                  discharge_limit: int = 1200, charge_limit: int = -1200,
                  pwr_offgrid: int = 0, exports_bypass: bool = True,
-                 min_output: int = 0, name: str = "dev") -> None:
+                 min_output: int = 0, bypass: bool | None = None, name: str = "dev") -> None:
         self.name = name
         self.state = soc_state
         self.pv = pv
@@ -150,8 +150,11 @@ class FakeDevice:
         self.batteryInput = _sensor(0)    # outputPackPower: into battery (charge)
         self.electricLevel = _sensor(level)
         self.minSoc = _sensor(0)
-        # a full battery passing its solar reports hardware bypass, like real devices
-        self.byPass = _sensor(1 if (soc_state == DeviceState.SOCFULL and pv > 0) else 0)
+        # a full battery passing its solar reports hardware bypass, like real devices;
+        # `bypass` overrides this to represent a not-full device that still reports
+        # hardware bypass and ignores a raised outputLimit (#1565)
+        auto_bypass = soc_state == DeviceState.SOCFULL and pv > 0
+        self.byPass = _sensor(1 if (auto_bypass if bypass is None else bypass) else 0)
 
         self.commands: list[tuple[str, int]] = []
 
@@ -286,7 +289,7 @@ async def drive_metered(mode: ManagerMode, case: "Case", cycles: int = 60) -> li
         dev = FakeDevice(state, spec.level if spec.level is not None else rep_level,
                          pv=spec.pv, charge_limit=charge_limit,
                          pwr_offgrid=spec.offgrid, exports_bypass=spec.exports,
-                         min_output=spec.min_output, name=f"dev{len(devs) + 1}")
+                         min_output=spec.min_output, bypass=spec.bypass, name=f"dev{len(devs) + 1}")
         dev.seed_spec(spec.discharging, spec.charging, spec.device_to_grid)
         devs.append(dev)
     mgr = build_manager(mode, devs, case.fuse)
@@ -314,6 +317,7 @@ class DeviceSpec:
     offgrid: int = 0        # off-grid consumers on this device, W (0 = none)
     exports: bool = True    # exports_bypass: gridReverse allows export
     min_output: int = 0     # minimum discharge floor, W (0 = none; HUB/AIO only)
+    bypass: bool | None = None  # force hardware byPass flag (None = auto: SOCFULL + pv>0)
 
 
 @dataclass
@@ -393,6 +397,10 @@ def load_cases_from_csv(mode_stem: str) -> list[Case]:
             def _exports(cell: str | None) -> bool:
                 return not ((cell or "").strip() == "0")
 
+            def _bypass(cell: str | None) -> bool | None:
+                v = (cell or "").strip()
+                return None if v == "" else v != "0"
+
             base = dict(
                 mode=row["mode"],
                 num=int(row["case"]),
@@ -411,6 +419,7 @@ def load_cases_from_csv(mode_stem: str) -> list[Case]:
                 offgrid=_watts(row.get("offgrid_w")),
                 exports=_exports(row.get("exports")),
                 min_output=_watts(row.get("min_output_w")),
+                bypass=_bypass(row.get("bypass")),
             )
             soc2 = (row.get("soc2") or "").strip()
             if soc2 == "":
@@ -431,6 +440,7 @@ def load_cases_from_csv(mode_stem: str) -> list[Case]:
                 offgrid=_watts(row.get("offgrid2_w")),
                 exports=_exports(row.get("exports2")),
                 min_output=_watts(row.get("min_output2_w")),
+                bypass=_bypass(row.get("bypass2")),
             )
             socs1 = SOC_ALL if soc == "any" else (soc,)
             socs2 = SOC_ALL if soc2 == "any" else (soc2,)

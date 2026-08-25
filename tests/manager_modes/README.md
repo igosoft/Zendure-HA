@@ -35,6 +35,7 @@ uv pip install --python .venv-ha-test/bin/python -r requirements.txt -r requirem
 | `manager_modes/test_matching_charge.py` | MATCHING_CHARGE — CSV-driven |
 | `manager_modes/test_store_solar.py` | STORE_SOLAR — CSV-driven |
 | `manager_modes/test_min_output.py` | minimum discharge — cross-mode CSV + lifecycle |
+| `manager_modes/test_bypass.py` | hardware byPass flag — dispatch-capacity exclusion + no_alternative override |
 | `manager_modes/test_off.py` | OFF — no distribution, state = OFF |
 | `manager_modes/test_smoke_import.py` | the real manager imports under the HA stack |
 | `manager_modes/test_soc_boundaries.py` | socSet / minSoc thresholds (SimpleNamespace fakes) |
