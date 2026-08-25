@@ -28,18 +28,18 @@ uv pip install --python .venv-ha-test/bin/python -r requirements.txt -r requirem
 
 ## Layout
 
-| Path | Tests | What it covers |
-|---|---:|---|
-| `manager_modes/test_matching.py` | ~170 | MATCHING mode — CSV-driven conformance |
-| `manager_modes/test_matching_discharge.py` | ~84 | MATCHING_DISCHARGE — CSV-driven |
-| `manager_modes/test_matching_charge.py` | ~108 | MATCHING_CHARGE — CSV-driven |
-| `manager_modes/test_store_solar.py` | ~80 | STORE_SOLAR — CSV-driven |
-| `manager_modes/test_min_output.py` | 10 | minimum discharge — cross-mode CSV + lifecycle |
-| `manager_modes/test_off.py` | 9 | OFF — no distribution, state = OFF |
-| `manager_modes/test_smoke_import.py` | 1 | the real manager imports under the HA stack |
-| `manager_modes/test_soc_boundaries.py` | 6 | socSet / minSoc thresholds (SimpleNamespace fakes) |
-| `manager_modes/harness.py` | — | plant-model harness (`drive_metered`, `FakeDevice`) |
-| `manager_modes/data/*.csv` | — | per-mode spec data (source of truth) |
+| Path | What it covers |
+|---|---|
+| `manager_modes/test_matching.py` | MATCHING mode — CSV-driven conformance |
+| `manager_modes/test_matching_discharge.py` | MATCHING_DISCHARGE — CSV-driven |
+| `manager_modes/test_matching_charge.py` | MATCHING_CHARGE — CSV-driven |
+| `manager_modes/test_store_solar.py` | STORE_SOLAR — CSV-driven |
+| `manager_modes/test_min_output.py` | minimum discharge — cross-mode CSV + lifecycle |
+| `manager_modes/test_off.py` | OFF — no distribution, state = OFF |
+| `manager_modes/test_smoke_import.py` | the real manager imports under the HA stack |
+| `manager_modes/test_soc_boundaries.py` | socSet / minSoc thresholds (SimpleNamespace fakes) |
+| `manager_modes/harness.py` | plant-model harness (`drive_metered`, `FakeDevice`) |
+| `manager_modes/data/*.csv` | per-mode spec data (source of truth) |
 
 ### CSV columns
 

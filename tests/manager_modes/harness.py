@@ -325,6 +325,7 @@ class Case:
     devices: list[DeviceSpec]
     notes: str
     any_row: bool = False
+    xfail: bool = False    # expected to fail
 
     @property
     def id(self) -> str:
@@ -368,7 +369,10 @@ def make_params(cases: list["Case"]) -> list:
     """Build pytest params from Case list."""
     import pytest
 
-    return [pytest.param(c, id=c.id) for c in cases]
+    return [
+        pytest.param(c, id=c.id, marks=pytest.mark.xfail(reason=c.notes, strict=True)) if c.xfail else pytest.param(c, id=c.id)
+        for c in cases
+    ]
 
 
 def load_cases_from_csv(mode_stem: str) -> list[Case]:
@@ -395,6 +399,7 @@ def load_cases_from_csv(mode_stem: str) -> list[Case]:
                 p1=int(row["input_w"]),
                 fuse=int(row["fuse_w"]) if (row.get("fuse_w") or "").strip() else None,
                 notes=row["notes"],
+                xfail=(row.get("xfail") or "").strip().upper() == "XFAIL",
             )
             spec1 = DeviceSpec(
                 pv=int(row["pv_w"]),
