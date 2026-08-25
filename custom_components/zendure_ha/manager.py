@@ -724,7 +724,7 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
             # a device's own min_output floor (device.py) can raise its output past
             # what was commanded here, and the remaining devices must not be handed
             # the setpoint a floored peer already covers.
-            actual = await d.power_discharge(pwr + d.pwr_bypass) - d.pwr_bypass
+            actual = max(0, await d.power_discharge(pwr + d.pwr_bypass) - d.pwr_bypass)
             setpoint -= actual
             battery_budget = max(0, battery_budget - max(0, actual - solar))
             dev_start += 1 if actual != 0 and d.electricLevel.asInt + 3 < self.idle_lvlmax else 0
