@@ -86,5 +86,7 @@ case,mode,input_w,pv_w,soc,battery_discharging_w,battery_charging_w,device_to_gr
 205,MATCHING_CHARGE,300,200,FULL,0,0,200,0,not full,100,0,100,,,,,,,,"battery now covers the deficit under #1565 dispatchable logic: FULL passes 200W, dev2 discharges 100W"
 206,MATCHING_CHARGE,300,300,not full,0,0,300,0,not full,0,0,0,75,25,1200,,,,,"shared fuse 1200W: dev1 passes its 300W solar, dev2 idle (discharge-branch fuse guard)"
 207,MATCHING_CHARGE,300,200,FULL,0,0,200,0,not full,100,0,100,,,,,,,,battery now covers the deficit under #1565 dispatchable logic (#1559)
-208,MATCHING_CHARGE,300,300,not full,0,60,240,300,not full,0,240,60,80,20,,,,,,"80/20 SoC weighting splits the 300W deficit 240/60, matching the SoC ratio; neither device capped by its own 300W solar",XFAIL
-209,MATCHING_CHARGE,150,100,not full,0,0,100,100,not full,0,50,50,80,20,,,,,,"dev1's weighted 80% share (120W) exceeds its own 100W solar and is capped there; the 20W shortfall flows to dev2 (50W instead of its naive 30W share) so the total still equals the 150W setpoint",XFAIL
+208,MATCHING_CHARGE,300,300,not full,0,60,240,300,not full,0,240,60,80,20,,,,,,"80/20 SoC weighting splits the 300W deficit 240/60, matching the SoC ratio; neither device capped by its own 300W solar"
+209,MATCHING_CHARGE,150,100,not full,0,0,100,100,not full,0,50,50,80,20,,,,,,"dev1's weighted 80% share (120W) exceeds its own 100W solar and is capped there; the 20W shortfall flows to dev2 (50W instead of its naive 30W share) so the total still equals the 150W setpoint"
+210,MATCHING_CHARGE,100,0,EMPTY,0,0,0,0,not full,0,0,0,,,,,,,,"PV=0, two devices at different SoC, no min_output: both stay idle regardless of SoC"
+211,MATCHING_CHARGE,200,0,FULL,0,0,0,0,not full,0,0,0,,,,,,,,"PV=0 two-device: FULL has nothing to bypass, dev2 has no solar to pass through either - both idle, battery never discharges"
