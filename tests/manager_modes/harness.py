@@ -12,7 +12,6 @@ from types import SimpleNamespace
 from typing import Any
 
 from custom_components.zendure_ha.const import DeviceState, ManagerMode, PowerFlowDirection
-from custom_components.zendure_ha.device import ZendureDevice
 from custom_components.zendure_ha.manager import ZendureManager
 
 CSV_DIR = Path(__file__).resolve().parent / "data"
@@ -139,6 +138,7 @@ class FakeDevice:
         # Mirrors ZendureDevice.awake: False until the manager signals a
         # direction change, so the floor is inert on a fresh manager.
         self.awake = False
+        self._floor_battery_preserving = False
         self.kWh = 2.0
         self.actualKwh = 1.0
         self.fuseGrp = FakeFuseGroup(devices=[self])
@@ -150,6 +150,7 @@ class FakeDevice:
         self.batteryInput = _sensor(0)    # outputPackPower: into battery (charge)
         self.electricLevel = _sensor(level)
         self.minSoc = _sensor(0)
+        self.socLimit = _sensor(0)
         # a full battery passing its solar reports hardware bypass, like real devices;
         # `bypass` overrides this to represent a not-full device that still reports
         # hardware bypass and ignores a raised outputLimit (#1565)
@@ -165,8 +166,9 @@ class FakeDevice:
     async def power_get(self) -> bool:
         return True  # state is fixed for the scenario
 
-    def on_direction_change(self, direction: PowerFlowDirection) -> None:
-        self.awake = direction == PowerFlowDirection.DISCHARGE
+    def on_direction_change(self, direction: PowerFlowDirection, *, battery_preserving: bool = False) -> None:
+        self.awake = direction == PowerFlowDirection.DISCHARGING
+        self._floor_battery_preserving = battery_preserving
 
     def seed_spec(self, discharging: int, charging: int, device_to_grid: int) -> None:
         """Place the device at the spec's steady-state operating point."""
@@ -206,15 +208,9 @@ class FakeDevice:
         _set(self.batteryOutput, bat_out)
 
     async def power_discharge(self, power: int) -> int:
+        # The manager now applies the min_output floor itself before calling this
+        # (mirrors ZendureDevice.power_discharge, which no longer applies it either).
         out = max(0, min(power, self.discharge_limit))   # mirror device.power_discharge clamp
-        out = ZendureDevice.apply_min_output_floor(
-            out,
-            awake=self.awake,
-            min_output=self.min_output,
-            state=self.state,
-            electric_level=self.electricLevel.asInt,
-            min_soc=self.minSoc.asNumber,
-        )
         self.commands.append(("discharge", power))
         self._apply_net(out)
         return self.homeOutput.asInt

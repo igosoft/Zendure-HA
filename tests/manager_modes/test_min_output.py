@@ -25,7 +25,6 @@ from typing import Any
 import pytest
 
 from custom_components.zendure_ha.const import DeviceState, ManagerMode, PowerFlowDirection
-from custom_components.zendure_ha.device import ZendureDevice
 from custom_components.zendure_ha.manager import ZendureManager
 
 from .harness import Case, assert_matches_spec, drive_metered, load_cases_from_csv, make_params
@@ -76,6 +75,7 @@ class _FakeDevice:
         self.solarInput = _sensor(0)
         self.byPass = _sensor(0)
         self.minSoc = _sensor(0)
+        self.socLimit = _sensor(0)
         self.pwr_max = 1200
         self.pwr_offgrid = 0
         self.pwr_produced = 0
@@ -85,6 +85,7 @@ class _FakeDevice:
         self.actualKwh = 10.0
         self.min_output = min_output
         self.awake = False
+        self._floor_battery_preserving = False
         self.charge_optimal = 300
         self.charge_start = 120
         self.discharge_optimal = 300
@@ -99,21 +100,14 @@ class _FakeDevice:
     def online(self) -> bool:
         return True
 
-    def on_direction_change(self, direction: PowerFlowDirection) -> None:
-        self.awake = direction == PowerFlowDirection.DISCHARGE
+    def on_direction_change(self, direction: PowerFlowDirection, *, battery_preserving: bool = False) -> None:
+        self.awake = direction == PowerFlowDirection.DISCHARGING
+        self._floor_battery_preserving = battery_preserving
 
     async def power_get(self) -> bool:
         return self.state != DeviceState.OFFLINE
 
     async def power_discharge(self, power: int) -> int:
-        power = ZendureDevice.apply_min_output_floor(
-            power,
-            awake=self.awake,
-            min_output=self.min_output,
-            state=self.state,
-            electric_level=self.electricLevel.asInt,
-            min_soc=self.minSoc.asNumber,
-        )
         self.discharge_calls.append(power)
         return power
 
@@ -195,10 +189,12 @@ async def test_charge_direction_idle_device_stays_out_of_discharge() -> None:
     assert device.awake is False  # the charge direction persists
 
 
-async def test_matching_charge_discharge_call_never_floors() -> None:
-    """MATCHING_CHARGE may only pass solar through. An awake device whose solar
-    pass-through is dispatched must not have the floor applied: the battery is
-    never discharged in this mode, so the command stays at the solar level."""
+async def test_matching_charge_discharge_call_caps_floor_at_own_solar() -> None:
+    """MATCHING_CHARGE may only pass solar through - it must never discharge the
+    battery. The floor is not disabled outright: it still applies, but capped at
+    the device's own solar, so it can never push the command past what solar
+    alone covers. Here solar (60W) is below the floor (100W), so the command
+    stays at the solar-capped level, not the full 100W floor."""
 
     device = _FakeDevice(electric_level=50, state=DeviceState.INACTIVE, min_output=100)
     mgr = _manager(device)
@@ -210,9 +206,32 @@ async def test_matching_charge_discharge_call_never_floors() -> None:
 
     await mgr.powerChanged(300, False, datetime.now())
 
-    # pass-through command stays at solar (60 W); the floor would raise it to 100 W
+    # pass-through command is capped at solar (60W); the floor (100W) exceeds
+    # what solar can cover, so it's never fully reached - never touches the battery
     assert device.discharge_calls == [60]
-    assert device.awake is False
+    assert device.awake is True
+    assert device._floor_battery_preserving is True
+
+
+async def test_matching_charge_discharge_call_reaches_floor_when_solar_covers_it() -> None:
+    """Same MATCHING_CHARGE solar-capped floor, but with own solar (200W) comfortably
+    above the floor (100W) while the naturally-computed demand-driven share (20W,
+    from a low P1) sits below it: the command should be raised to the full
+    min_output, proving the cap is a ceiling that still lets the floor raise a
+    low natural share, not a permanent disable."""
+
+    device = _FakeDevice(electric_level=50, state=DeviceState.INACTIVE, min_output=100)
+    mgr = _manager(device)
+    mgr.operation = ManagerMode.MATCHING_CHARGE
+    device.awake = True
+    mgr.charge_time = datetime.now() - timedelta(minutes=1)
+    device.solarInput = _sensor(200)
+    device.homeInput = _sensor(-200)  # 200W of own solar available
+
+    # setpoint = p1 + home = -180 + 200 = 20W: well below both solar and the floor
+    await mgr.powerChanged(-180, False, datetime.now())
+
+    assert device.discharge_calls == [100]
 
 
 async def test_empty_battery_floor_is_skipped() -> None:
@@ -281,3 +300,53 @@ async def test_floored_solo_device_does_not_trigger_unnecessary_idle_start() -> 
 
     assert dev1.discharge_calls == [100]  # floored well past the 50W setpoint on its own
     assert dev2.discharge_calls == []  # must not be woken; the overshoot isn't relieved by it
+
+
+async def test_idle_floor_devices_own_solar_counts_toward_dispatch_produced() -> None:
+    """A device that's idle but floor-eligible (home==0, min_output>0, awake) still
+    has its own solar. The per-device solar totals already counted it, but
+    discharge_produced didn't - it only added up devices that were actively
+    exporting. That made the safety clamp think the group had less solar than
+    it really did, which broke the SoC-weighted split: the actively-exporting
+    peer kept overshooting its share instead of shrinking, and this device's
+    own solar never reached home. Taken from a real log where one device got
+    stuck at 668W (target 197W) and the other stuck at 0W.
+    """
+    dev1 = _FakeDevice(electric_level=13, state=DeviceState.INACTIVE, min_output=90)
+    dev1.awake = True
+    dev1.homeOutput = _sensor(668)  # actively exporting: home>0 branch
+
+    dev2 = _FakeDevice(electric_level=11, state=DeviceState.INACTIVE, min_output=102)
+    dev2.awake = True
+    dev2.batteryInput = _sensor(566)  # idle-with-floor branch: home==0, but real solar
+
+    mgr = _manager(dev1)
+    mgr.devices = [dev1, dev2]
+
+    await mgr.powerChanged(-307, False, datetime.now())  # setpoint = -307 + 668 + 0 = 361
+
+    # SoC-weighted (13:11) split of the 361W setpoint: dev1 shrinks from 668W
+    # down to its fair ~195W share, dev2 rises from 0W to its ~166W share.
+    # Neither needs its battery: both shares stay well under each device's own
+    # solar (668W / 566W).
+    assert dev1.discharge_calls == [195]
+    assert dev2.discharge_calls == [166]
+    assert sum(dev1.discharge_calls) + sum(dev2.discharge_calls) == 361
+
+
+async def test_manual_discharge_never_engages_floor() -> None:
+    """MANUAL is user-driven: the command should be exactly what was asked for,
+    never silently raised by the min_output floor. Mirrors
+    test_cold_start_discharge_engages_floor's kickstart setup (60W, so the
+    idle-start kickstart fires and commands POWER_START=50W) but in MANUAL
+    mode, where that 50W must NOT be floored up to the 100W min_output."""
+
+    device = _FakeDevice(electric_level=50, state=DeviceState.INACTIVE, min_output=100)
+    mgr = _manager(device)
+    mgr.operation = ManagerMode.MANUAL
+    mgr.manualpower = _sensor(60)
+
+    await mgr.powerChanged(0, False, datetime.now())
+
+    assert device.discharge_calls == [50]
+    assert device.awake is False

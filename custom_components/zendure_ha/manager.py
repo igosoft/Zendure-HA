@@ -58,9 +58,9 @@ def _log_power_flow(d: ZendureDevice) -> str | None:
     home = d.homeOutput.asInt - d.homeInput.asInt
     if not (pv or charge or discharge or home):
         return None
-    flow = f"{d.name} pv:{pv}W charge:{charge}W discharge:{discharge}W home:{home}W soc:{d.electricLevel.asInt}%"
+    flow = f"pv:{pv}W charge:{charge}W discharge:{discharge}W home:{home}W soc:{d.electricLevel.asInt}%"
     if d.min_output > 0:
-        flow += f" min:{d.min_output}W"
+        flow += f" min:{d.min_output}W awake:{d.awake} state:{d.state.name} socLimit:{d.socLimit.asInt} minSoc:{d.minSoc.asNumber}"
     return flow
 
 
@@ -460,11 +460,14 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
                 d.pwr_produced = min(0, d.batteryOutput.asInt + d.homeInput.asInt - d.batteryInput.asInt - d.homeOutput.asInt)
                 if d.state == DeviceState.SOCFULL and -d.solarInput.asInt < d.pwr_produced:
                     d.pwr_produced = -d.solarInput.asInt
-                self.produced -= d.pwr_produced
+                # SOCEMPTY + not exporting: solar stays in its own battery, not the
+                # group's - counting it here would force a peer to drain its battery.
+                if not (d.state == DeviceState.SOCEMPTY and d.homeOutput.asInt <= 0):
+                    self.produced -= d.pwr_produced
 
                 # only positive pwr_offgrid must be taken into account, negative values count a solarInput
                 if (home := -d.homeInput.asInt + max(0, d.pwr_offgrid)) < 0:
-                    direction = PowerFlowDirection.CHARGE
+                    direction = PowerFlowDirection.CHARGING
                     self.charge.append(d)
                     self.charge_limit += d.fuseGrp.charge_limit(d)
                     self.charge_optimal += d.charge_optimal
@@ -474,7 +477,7 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
                     setpoint -= min(d.homeInput.asInt, d.batteryInput.asInt)
                 # SOCEMPTY means, it could not discharge the battery, but it is still possible to feed into the home using solarpower or offGrid
                 elif (home := d.homeOutput.asInt) > 0:
-                    direction = PowerFlowDirection.DISCHARGE
+                    direction = PowerFlowDirection.DISCHARGING
                     self.discharge.append(d)
                     # Cap the bypass at the homeOutput actually added to the setpoint for this
                     # device: pwr_produced can exceed homeOutput (internal trickle charge, sensor
@@ -490,10 +493,13 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
                     setpoint += home
                 elif d.min_output > 0 and d.awake and d.state not in (DeviceState.SOCEMPTY, DeviceState.SOCFULL):
                     # Idle but has a minimum discharge configured and the manager is in discharge direction
-                    direction = PowerFlowDirection.DISCHARGE
+                    direction = PowerFlowDirection.DISCHARGING
                     self.discharge.append(d)
                     self.discharge_limit += d.fuseGrp.discharge_limit(d)
                     self.discharge_optimal += d.discharge_optimal
+                    # Count its solar too, or dispatch_produced comes in too low and
+                    # the safety clamp pushes a peer's share up.
+                    self.discharge_produced -= d.pwr_produced
                     self.discharge_weight += d.pwr_max * d.electricLevel.asInt
                 else:
                     self.idle.append(d)
@@ -506,7 +512,7 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
                 onlinekWh += d.kWh
 
                 if (flow := _log_power_flow(d)) is not None:
-                    flows.append(f"{direction.name.lower()} {flow}")
+                    flows.append(f"{d.name} => {direction.name.lower()} {flow}")
 
         # Update the power entities
         self.power.update_value(power)
@@ -524,7 +530,7 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
         # Update power distribution.
         _LOGGER.info("P1 ======> p1:%s isFast:%s, setpoint:%sW stored:%sW", p1, isFast, setpoint, self.produced)
         for flow in flows:
-            _LOGGER.info("Power flow => %s", flow)
+            _LOGGER.info("%s", flow)
         match self.operation:
             case ManagerMode.MATCHING:
                 if setpoint < 0:
@@ -554,17 +560,51 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
             case ManagerMode.OFF:
                 self.operationstate.update_value(ManagerState.OFF.value)
 
-    def _set_direction(self, direction: PowerFlowDirection) -> None:
+    @staticmethod
+    def _apply_min_output(
+        power: int,
+        device: ZendureDevice,
+        *,
+        awake: bool | None = None,
+        battery_preserving: bool | None = None,
+    ) -> int:
+        """Raise a discharge command to min_output while awake and eligible.
+        """
+        if awake is None:
+            awake = device.awake
+        if battery_preserving is None:
+            battery_preserving = device._floor_battery_preserving
+        if not awake or device.min_output <= 0:
+            return power
+        if battery_preserving:
+            solar_cap = max(0, -device.pwr_produced - device.pwr_bypass)
+            return min(max(power, device.min_output), solar_cap)
+        if device.state in (DeviceState.SOCEMPTY, DeviceState.SOCFULL):
+            return power
+        if device.electricLevel.asInt <= device.minSoc.asNumber:
+            return power
+        return max(power, device.min_output)
+
+    def _set_direction(
+        self, direction: PowerFlowDirection, *, battery_preserving: bool = False
+    ) -> None:
         if direction != self.direction:
             _LOGGER.debug("Setpoint direction => %s", direction.name.lower())
             self.direction = direction
         for d in self.devices:
-            d.on_direction_change(direction)
+            d.on_direction_change(direction, battery_preserving=battery_preserving)
 
     async def power_charge(self, setpoint: int, time: datetime) -> None:
         """Charge devices."""
 
-        self._set_direction(PowerFlowDirection.CHARGE)
+        self._set_direction(PowerFlowDirection.CHARGING)
+
+        # In battery-preserving modes, hold a floored device at min(min_output, its
+        # own solar) instead of stopping it
+        battery_preserving = self.operation in (
+            ManagerMode.MATCHING_CHARGE,
+            ManagerMode.STORE_SOLAR,
+        )
 
         # stop discharging devices
         for d in self.discharge:
@@ -572,7 +612,24 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
             if d.byPass.asInt > 0:
                 continue
             # avoid gridOff device to use power from the grid
-            await d.power_discharge(0 if d.pwr_offgrid == 0 else -10)
+            stop_pwr = 0 if d.pwr_offgrid == 0 else -10
+            if battery_preserving:
+                stop_pwr = self._apply_min_output(
+                    stop_pwr, d, awake=True, battery_preserving=True
+                )
+            await d.power_discharge(stop_pwr)
+
+        # Hold an idle floored device at its floor too, even though it's not in
+        # this cycle's charge/discharge groups.
+        # if battery_preserving and self.idle:
+        #     still_idle = []
+        #     for d in self.idle:
+        #         pwr = self._apply_min_output(0, d, awake=True, battery_preserving=True)
+        #         if pwr > 0:
+        #             await d.power_discharge(pwr)
+        #         else:
+        #             still_idle.append(d)
+        #     self.idle = still_idle
 
         # prevent hysteria
         if self.charge_time > time:
@@ -630,6 +687,49 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
                     break
             self.pwr_low: int = 0
 
+    def _solar_share_split(self, setpoint: int) -> dict[ZendureDevice, int]:
+        """Split solar between devices by SoC, for when solar alone covers the setpoint.
+
+        Each device gets at most its own solar and at least its min_output floor.
+        Keeps giving any device that would break one of these limits exactly that
+        limit, then splits what's left among the rest, until nothing's left to fix.
+        Works the same regardless of dispatch order, so a floor always shrinks the
+        other devices' share.
+        """
+        solar = {d: max(0, -d.pwr_produced - d.pwr_bypass) for d in self.discharge}
+        floor = {
+            d: self._apply_min_output(0, d)
+            for d in self.discharge
+        }
+
+        shares: dict[ZendureDevice, int] = {}
+        flexible = list(self.discharge)
+        remaining = setpoint
+        while flexible:
+            weight_sum = sum(d.pwr_max * d.electricLevel.asInt for d in flexible)
+            fixed = None
+            for d in flexible:
+                weight = d.pwr_max * d.electricLevel.asInt
+                natural = int(remaining * weight / weight_sum) if weight_sum else int(remaining / len(flexible))
+                if floor[d] > natural:
+                    fixed = (d, floor[d])
+                    break
+                if natural > solar[d]:
+                    fixed = (d, solar[d])
+                    break
+            if fixed is None:
+                for i, d in enumerate(flexible):
+                    weight = d.pwr_max * d.electricLevel.asInt
+                    shares[d] = int(remaining * weight / weight_sum) if weight_sum else int(remaining / (len(flexible) - i))
+                    remaining -= shares[d]
+                    weight_sum -= weight
+                break
+            d, pwr = fixed
+            shares[d] = pwr
+            remaining -= pwr
+            flexible.remove(d)
+        return shares
+
     async def power_discharge(self, setpoint: int) -> None:
         """Discharge devices."""
         self.operationstate.update_value(ManagerState.DISCHARGE.value if setpoint > 0 and self.discharge else ManagerState.IDLE.value)
@@ -639,7 +739,13 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
             self.charge_time = datetime.max
             self.pwr_low = 0
 
-        self._set_direction(PowerFlowDirection.CHARGE if self.operation == ManagerMode.MATCHING_CHARGE else PowerFlowDirection.DISCHARGE)
+        # Floor: off in MANUAL, solar-capped in MATCHING_CHARGE, uncapped elsewhere.
+        if self.operation == ManagerMode.MANUAL:
+            self._set_direction(PowerFlowDirection.CHARGING)
+        elif self.operation == ManagerMode.MATCHING_CHARGE:
+            self._set_direction(PowerFlowDirection.DISCHARGING, battery_preserving=True)
+        else:
+            self._set_direction(PowerFlowDirection.DISCHARGING)
 
         # stop charging devices
         for d in self.charge:
@@ -677,13 +783,17 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
         # least its own solar (#1555 solar-first).
         solar_total = sum(max(0, -d.pwr_produced - d.pwr_bypass) for d in self.discharge)
         battery_budget = max(0, setpoint - solar_total)
+
+        solar_shares = self._solar_share_split(setpoint) if solaronly and solar_total > 0 else {}
+
         for i, d in enumerate(sorted(self.discharge, key=lambda d: d.electricLevel.asInt, reverse=False)):
             headroom = dispatchable(d)
             solar = max(0, -d.pwr_produced - d.pwr_bypass)
 
-            # In solar-only mode the demand is rationed among the producing
-            # devices proportionally to their solar, so every device passes its
-            # fair share instead of the first one consuming the whole setpoint.
+            # In solar-only mode the demand is split among the producing
+            # devices by SoC weight (see solar_shares above), so every device
+            # gets its fair share instead of the first one taking the
+            # whole setpoint.
             # Otherwise: battery budget weighted by pwr_max * SOC%, so devices
             # with higher SOC get a larger share, on top of their own solar.
             # Guard against division by zero: discharge_weight can be 0 when all
@@ -691,7 +801,7 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
             # In that case, distribute the remaining budget evenly across the
             # remaining devices so they can still pass through solar production.
             if solaronly and solar_total > 0:
-                pwr = int(setpoint * solar / solar_total)
+                pwr = solar_shares[d]
             else:
                 device_weight = d.pwr_max * d.electricLevel.asInt
                 if self.discharge_weight != 0:
@@ -720,10 +830,28 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
                 self.pwr_low = 0 if (delta := d.discharge_start * 1.5 - pwr) <= 0 else self.pwr_low + int(delta)
                 pwr = 0 if self.pwr_low > d.discharge_optimal else pwr
 
-            # Credit the ACTUAL dispatched power, not the pre-floor pwr computed above:
-            # a device's own min_output floor (device.py) can raise its output past
-            # what was commanded here, and the remaining devices must not be handed
-            # the setpoint a floored peer already covers.
+            # Apply the floor one more time: whatever the safety clamp or park
+            # logic above did to pwr, a floored device's command must not end up
+            # below its floor.
+            pre_floor = pwr
+            pwr = self._apply_min_output(pwr, d)
+            if d.min_output > 0:
+                _LOGGER.debug(
+                    "%s => min_output floor: pre=%sW post=%sW awake=%s battery_preserving=%s solar=%sW state=%s minSoc=%s socLimit=%s",
+                    d.name,
+                    pre_floor,
+                    pwr,
+                    d.awake,
+                    d._floor_battery_preserving,
+                    solar,
+                    d.state.name,
+                    d.minSoc.asNumber,
+                    d.socLimit.asInt,
+                )
+
+            # Use what the device actually did, not pwr: power_discharge() always
+            # returns the real result, which can differ from what was asked - so the
+            # rest of the devices don't get handed a setpoint this one already covered.
             actual = max(0, await d.power_discharge(pwr + d.pwr_bypass) - d.pwr_bypass)
             setpoint -= actual
             battery_budget = max(0, battery_budget - max(0, actual - solar))
@@ -734,8 +862,9 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice):
             self.idle.sort(key=lambda d: d.electricLevel.asInt, reverse=True)
             for d in self.idle:
                 if d.state != DeviceState.SOCEMPTY:
-                    _LOGGER.info("Start idle device %s => %sW (SoC %s%%)", d.name, SmartMode.POWER_START, d.electricLevel.asInt)
-                    await d.power_discharge(SmartMode.POWER_START)
+                    pwr = self._apply_min_output(SmartMode.POWER_START, d)
+                    _LOGGER.info("Start idle device %s => %sW (SoC %s%%)", d.name, pwr, d.electricLevel.asInt)
+                    await d.power_discharge(pwr)
                     if (dev_start := dev_start - d.discharge_optimal * 2) <= 0:
                         break
             self.pwr_low: int = 0

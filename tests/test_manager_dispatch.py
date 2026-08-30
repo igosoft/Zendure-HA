@@ -40,6 +40,9 @@ class _FakeDevice:
         self.state = state
         self.min_output = 0
         self.awake = False
+        self._floor_battery_preserving = False
+        self.minSoc = SimpleNamespace(asNumber=0.0)
+        self.socLimit = SimpleNamespace(asInt=0)
         self.charge_start = 0
         self.charge_optimal = 0
         self.discharge_start = 0
@@ -47,8 +50,9 @@ class _FakeDevice:
         self.charge_calls: list[int] = []
         self.discharge_calls: list[int] = []
 
-    def on_direction_change(self, direction: PowerFlowDirection) -> None:
-        self.awake = direction == PowerFlowDirection.DISCHARGE
+    def on_direction_change(self, direction: PowerFlowDirection, *, battery_preserving: bool = False) -> None:
+        self.awake = direction == PowerFlowDirection.DISCHARGING
+        self._floor_battery_preserving = battery_preserving
 
     async def power_charge(self, power: int) -> int:
         self.charge_calls.append(power)

@@ -110,17 +110,6 @@ class ZendureBattery(EntityDevice):
 class ZendureDevice(EntityDevice):
     """Zendure Device class for devices integration."""
 
-    @staticmethod
-    def apply_min_output_floor(power: int, *, awake: bool, min_output: int, state: DeviceState, electric_level: int, min_soc: float) -> int:
-        """Raise a discharge command to min_output while awake and the battery can serve it.
-
-        Shared by power_discharge and the manager-mode test fakes so the floor can
-        never drift between production code and what the tests assert against.
-        """
-        if awake and min_output > 0 and state not in (DeviceState.SOCEMPTY, DeviceState.SOCFULL) and electric_level > min_soc:
-            return max(power, min_output)
-        return power
-
     def __init__(self, hass: HomeAssistant, deviceId: str, name: str, model: str, definition: dict[str, str], parent: str | None = None) -> None:
         """Initialize Device."""
         from .fusegroup import FuseGroup
@@ -160,6 +149,9 @@ class ZendureDevice(EntityDevice):
         self.state: DeviceState = DeviceState.OFFLINE
         self.exports_bypass: bool = True
         self.awake: bool = False
+        # Whether the min_output floor must stay capped at this device's own
+        # solar (never draw the battery) - set by the manager per dispatch cycle.
+        self._floor_battery_preserving: bool = False
 
         self.create_entities()
 
@@ -324,9 +316,12 @@ class ZendureDevice(EntityDevice):
         entity = getattr(self, "minOutputPower", None)
         return entity.asInt if entity is not None else 0
 
-    def on_direction_change(self, direction: PowerFlowDirection) -> None:
+    def on_direction_change(
+        self, direction: PowerFlowDirection, *, battery_preserving: bool = False
+    ) -> None:
         # Awake while discharging so power_discharge can hold the microinverter above its minimum.
-        self.awake = direction == PowerFlowDirection.DISCHARGE
+        self.awake = direction == PowerFlowDirection.DISCHARGING
+        self._floor_battery_preserving = battery_preserving
 
     def localEntityWrite(self, entity: EntityZendure, value: Any) -> None:
         # Snap values below 101 to the nearest step in {0, 30, 60, 90, 100}.
@@ -691,7 +686,7 @@ class ZendureDevice(EntityDevice):
         power = min(0, max(power, self.charge_limit))
         """power is here a negative value, but homeInput and homeOutput are always positive"""
         if abs(power + self.homeInput.asInt - self.homeOutput.asInt) <= SmartMode.POWER_TOLERANCE:
-            _LOGGER.debug("Power charge %s => no action [power %s]", self.name, power)
+            _LOGGER.debug("%s => Power charge, no action [power %s]", self.name, power)
             return - self.homeInput.asInt
         return await self.charge(power)
 
@@ -702,18 +697,13 @@ class ZendureDevice(EntityDevice):
     async def power_discharge(self, power: int) -> int:
         """Set discharge power."""
         power = max(0, min(power, self.discharge_limit))
-        power = self.apply_min_output_floor(
-            power,
-            awake=self.awake,
-            min_output=self.min_output,
-            state=self.state,
-            electric_level=self.electricLevel.asInt,
-            min_soc=self.minSoc.asNumber,
-        )
         if abs(power - self.homeOutput.asInt + self.homeInput.asInt) <= SmartMode.POWER_TOLERANCE:
-            _LOGGER.debug("Power discharge %s => no action, %sW (SoC %s%%)", self.name, power, self.electricLevel.asInt)
+            _LOGGER.debug("%s => Power discharge, no action, %sW (SoC %s%%)", self.name, power, self.electricLevel.asInt)
             return self.homeOutput.asInt
-        return await self.discharge(power)
+        await self.discharge(power)
+        # Return what the device actually did, not what we asked for - if it
+        # ignores the command, we shouldn't think it worked.
+        return self.homeOutput.asInt - self.homeInput.asInt
 
     async def power_off(self) -> None:
         """Set the power off."""
@@ -821,18 +811,18 @@ class ZendureZenSdk(ZendureDevice):
 
     async def charge(self, power: int, _off: bool = False) -> int:
         """Set charge power."""
-        _LOGGER.debug("Power charge %s => %s", self.name, power)
+        _LOGGER.debug("%s => Power charge %s", self.name, power)
         if power == -SmartMode.POWER_START and self.limitInput.asInt >= SmartMode.POWER_START and self.homeInput.asInt == 0:
             power = -min(self.limitInput.asInt + 4, 2 * SmartMode.POWER_START)
-            _LOGGER.debug("Power charge kickstart %s => %s", self.name, power)
+            _LOGGER.debug("%s => Power charge kickstart %s", self.name, power)
         await self.doCommand({"properties": {"smartMode": 0 if power == 0 and self.pwr_offgrid == 0 else 1, "acMode": 1, "outputLimit": 0, "inputLimit": -power}})
         return power
 
     async def discharge(self, power: int) -> int:
-        _LOGGER.debug("Power discharge %s => %sW (SoC %s%%)", self.name, power, self.electricLevel.asInt)
+        _LOGGER.debug("%s => Power discharge %sW (SoC %s%%)", self.name, power, self.electricLevel.asInt)
         if power == SmartMode.POWER_START and self.limitOutput.asInt >= SmartMode.POWER_START and self.homeOutput.asInt == 0:
             power = min(self.limitOutput.asInt + 4, 2 * SmartMode.POWER_START)
-            _LOGGER.debug("Power discharge kickstart %s => %sW (SoC %s%%)", self.name, power, self.electricLevel.asInt)
+            _LOGGER.debug("%s => Power discharge kickstart %sW (SoC %s%%)", self.name, power, self.electricLevel.asInt)
         await self.doCommand({"properties": {"smartMode": 0 if power == 0 and self.pwr_offgrid == 0 else 1, "acMode": 2, "outputLimit": power, "inputLimit": 0}})
         return power
 

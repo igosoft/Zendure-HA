@@ -136,8 +136,11 @@ class ZendureRestoreNumber(ZendureNumber, RestoreEntity):
         doupdate: bool = False,
     ) -> None:
         """Initialize a number entity."""
-        super().__init__(device, uniqueid, onwrite, template, uom, deviceclass, maximum, minimum, mode, 1, doupdate)
+        # Set before super().__init__(): that call adds the entity to HA, and HA
+        # restores the saved value right away, during that same call. Setting
+        # the default after would overwrite that restored value with 0 every time.
         self._attr_native_value = 0
+        super().__init__(device, uniqueid, onwrite, template, uom, deviceclass, maximum, minimum, mode, 1, doupdate)
 
     async def async_added_to_hass(self) -> None:
         """Handle entity which will be added."""

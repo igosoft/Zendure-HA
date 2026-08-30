@@ -93,8 +93,9 @@ class _FakeDevice:
     def online(self) -> bool:
         return True
 
-    def on_direction_change(self, direction: PowerFlowDirection) -> None:
-        self.awake = direction != PowerFlowDirection.CHARGE
+    def on_direction_change(self, direction: PowerFlowDirection, *, battery_preserving: bool = False) -> None:
+        self.awake = direction != PowerFlowDirection.CHARGING
+        self._floor_battery_preserving = battery_preserving
 
     async def power_get(self) -> bool:
         # Mirrors ZendureDevice.power_get() classification (socLimit always 0 here).

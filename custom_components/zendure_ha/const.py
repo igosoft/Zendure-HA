@@ -75,5 +75,5 @@ class SmartMode:
 
 class PowerFlowDirection(Enum):
     STANDBY = 0
-    CHARGE = 1
-    DISCHARGE = 2
+    CHARGING = 1
+    DISCHARGING = 2
