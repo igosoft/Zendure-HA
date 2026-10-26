@@ -92,11 +92,38 @@ class ACE1500(ZendureLegacy):
             self._dischargeViaHub(power)
         return power
 
+    def _pairedHub(self):
+        """The HUB the ACE is paired with — it manages the ACE and relays its
+        automation commands. Fall back to the ACE's own topic when no hub is
+        found (standalone safety)."""
+        from custom_components.zendure_ha.api import Api
+        from custom_components.zendure_ha.devices.hub1200 import Hub1200
+        from custom_components.zendure_ha.devices.hub2000 import Hub2000
+
+        for d in Api.devices.values():
+            if d is not self and isinstance(d, (Hub1200, Hub2000)):
+                return d
+        return None
+
+    def _viaHubInvoke(self, command: dict[str, Any]) -> None:
+        """Paired mode: publish the automation to the HUB's function topic —
+        the hub manages the ACE and relays the command to it (deviceKey in the
+        payload still names the ACE as the target). Measured 26.10.2026: the
+        same command on the ACE's own topic left autoModel at 0."""
+        hub = self._pairedHub()
+        if hub is None:
+            self.mqttInvoke(command)
+            return
+        # deviceKey = cel komendy (ACE); messageId/deviceId/timestamp doda mqttPublish.
+        command["deviceKey"] = self.deviceId
+        _LOGGER.debug("%s => via hub %s: %s", self.name, hub.deviceId, command)
+        self.mqttPublish(f"iot/{hub.prodkey}/{hub.deviceId}/function/invoke", command)
+
     def _chargeViaHub(self, power: int) -> None:
         """Hub-paired path: Smart Matching mode (autoModel=8) with the charge
         target carried in autoModelValue.chargingPower. The Hub's periodic
         commands keep the device acting on the value."""
-        self.mqttInvoke(
+        self._viaHubInvoke(
             {
                 "arguments": [
                     {
@@ -118,7 +145,7 @@ class ACE1500(ZendureLegacy):
     def _dischargeViaHub(self, power: int) -> None:
         """Hub-paired path: Smart Matching with discharge target carried in
         autoModelValue.outPower."""
-        self.mqttInvoke(
+        self._viaHubInvoke(
             {
                 "arguments": [
                     {
