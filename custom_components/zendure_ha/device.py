@@ -430,7 +430,15 @@ class ZendureDevice(EntityDevice):
                 case "event/device" | "event/error":
                     return True
 
-                case "properties/read" | "function/invoke/reply" | "properties/read/reply" | "config" | "log" | "function/invoke":
+                case "function/invoke/reply":
+                    # The device's reply to our deviceAutomation command. The HUB does
+                    # not always execute it (measured 2026-09-20 21:00: command
+                    # 100-379 W, executed 29-52 W) - without this log there is no way
+                    # to tell "confirmed and ignored" from "never replied".
+                    _LOGGER.debug("%s <= %s %s", self.name, topic, payload)
+                    return False
+
+                case "properties/read" | "properties/read/reply" | "config" | "log" | "function/invoke":
                     return False
 
                 # case "firmware/report":

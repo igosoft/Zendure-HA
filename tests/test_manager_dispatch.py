@@ -67,6 +67,13 @@ def _make_manager_harness() -> ZendureManager:
     manager = object.__new__(ZendureManager)
     manager.operation = ManagerMode.MATCHING
     manager.operationstate = _RecordingSensor()
+    manager.power = _RecordingSensor()
+    manager.availableKwh = _RecordingSensor()
+    manager.totalKwh = _RecordingSensor()
+    manager.globalSoc = _RecordingSensor()
+    manager.devices = []
+    manager.fuseGroups = []
+    manager.simulation = False
     manager.charge = []
     manager.charge_limit = 0
     manager.charge_optimal = 0
@@ -82,7 +89,9 @@ def _make_manager_harness() -> ZendureManager:
     manager.idle = []
     manager.idle_lvlmax = 0
     manager.idle_lvlmin = 0
+    manager.produced = 0
     manager.pwr_low = 0
+    manager.topup_acc = 0
     return manager
 
 

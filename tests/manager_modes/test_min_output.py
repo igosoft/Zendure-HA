@@ -27,7 +27,7 @@ import pytest
 from custom_components.zendure_ha.const import DeviceState, ManagerMode, PowerFlowDirection
 from custom_components.zendure_ha.manager import ZendureManager
 
-from .harness import Case, assert_matches_spec, drive_metered, load_cases_from_csv, make_params
+from .harness import Case, assert_matches_spec, drive_metered, load_cases_from_csv, make_params, run_step
 
 CASES = load_cases_from_csv("min_output")
 
@@ -329,9 +329,49 @@ async def test_idle_floor_devices_own_solar_counts_toward_dispatch_produced() ->
     # down to its fair ~195W share, dev2 rises from 0W to its ~166W share.
     # Neither needs its battery: both shares stay well under each device's own
     # solar (668W / 566W).
-    assert dev1.discharge_calls == [195]
-    assert dev2.discharge_calls == [166]
-    assert sum(dev1.discharge_calls) + sum(dev2.discharge_calls) == 361
+    # The command ramp caps one cycle at 50W from the device's real output
+    # (668W / 0W), so the first commands land on the way to the shares, not on
+    # them: 668-50=618W down, 0+50 then floored to 102W up.
+    assert dev1.discharge_calls == [618]
+    assert dev2.discharge_calls == [102]
+
+
+async def test_steep_setpoint_change_ramps_command_in_steps() -> None:
+    """A steep demand change must reach the hub as 50W steps, not one jump.
+
+    Measured 2026-09-22: a ~100W+ change of the automation value between two
+    5s cycles made the hub confirm the command and then charge its battery
+    instead of delivering it, for minutes. The ramp caps the per-cycle change
+    against the device's real output; the floor still holds every step.
+    Without the ramp the sequence would be [580, 400, 220, 100] - a 180W step.
+    """
+    device = _FakeDevice(electric_level=67, state=DeviceState.INACTIVE, min_output=100)
+    device.homeOutput = _sensor(280)  # the hub delivers 280W when demand collapses
+    mgr = _manager(device)
+
+    await run_step(mgr, 300)  # demand spike: command steps up to 330
+    for _ in range(4):
+        device.homeOutput = _sensor(device.discharge_calls[-1])  # ideal device: delivers the command
+        await run_step(mgr, -180)
+
+    assert device.discharge_calls == [330, 280, 230, 180, 130]
+    assert all(call >= 100 for call in device.discharge_calls)
+
+
+async def test_big_demand_jump_bypasses_ramp() -> None:
+    """A demand jump over 500W sends the command immediately, no 50W steps.
+
+    A kettle switching on must not wait a minute of 50W steps while the grid
+    covers the gap. Without the skip the first command would be 330W
+    (a 50W step from the 280W the device delivers).
+    """
+    device = _FakeDevice(electric_level=67, state=DeviceState.INACTIVE, min_output=100)
+    device.homeOutput = _sensor(280)  # the hub delivers 280W before the jump
+    mgr = _manager(device)
+
+    await run_step(mgr, 800)  # kettle: setpoint = 800 + 280 = 1080W
+
+    assert device.discharge_calls == [1080]  # the full target in one step
 
 
 async def test_manual_discharge_never_engages_floor() -> None:
