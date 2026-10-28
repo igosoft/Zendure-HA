@@ -120,6 +120,9 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice, ZendureBalancing
         self.discharge_weight = 0
 
         self.idle: list[ZendureDevice] = []
+        # Idle grid feeders (paired ACE 1500). Kept out of idle: they are not home batteries, so
+        # the idle-start steps must not command them. Only the MANUAL charge split uses them.
+        self.grid_feeders: list[ZendureDevice] = []
         self.idle_lvlmax = 0
         self.idle_lvlmin = 0
         self.produced = 0
@@ -447,6 +450,7 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice, ZendureBalancing
                 self.discharge_produced = 0
                 self.discharge_weight = 0
                 self.idle.clear()
+                self.grid_feeders.clear()
                 self.idle_lvlmax = 0
                 self.idle_lvlmin = 100
                 self.produced = 0
@@ -520,6 +524,8 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice, ZendureBalancing
                     # the safety clamp pushes a peer's share up.
                     self.discharge_produced -= d.pwr_produced
                     self.discharge_weight += d.pwr_max * d.electricLevel.asInt
+                elif getattr(d, "grid_feeder", False):
+                    self.grid_feeders.append(d)
                 else:
                     self.idle.append(d)
                     self.idle_lvlmax = max(self.idle_lvlmax, d.electricLevel.asInt)
@@ -676,6 +682,19 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice, ZendureBalancing
         #         else:
         #             still_idle.append(d)
         #     self.idle = still_idle
+
+        # MANUAL is the only mode that charges from the grid. The HUB family
+        # battery is fed by its paired ACE 1500, which shows no charging
+        # telemetry while idle and so never lands in self.charge on its own.
+        # Pull grid feeders into the split so the ACE takes its share of
+        # manual_power and the manager keeps commanding it.
+        if self.operation == ManagerMode.MANUAL:
+            for d in self.grid_feeders:
+                d.pwr_max = max(d.fuseGrp.minpower, d.charge_limit)
+                self.charge.append(d)
+                self.charge_limit += d.pwr_max
+                self.charge_optimal += d.charge_optimal
+                self.charge_weight += d.pwr_max * (100 - d.electricLevel.asInt)
 
         # prevent hysteria
         if self.charge_time > time:

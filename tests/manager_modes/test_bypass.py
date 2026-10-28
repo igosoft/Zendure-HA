@@ -80,3 +80,46 @@ async def test_socempty_idle_device_is_not_a_real_alternative() -> None:
 
     assert dev1.discharge_calls == [100]  # not excluded: dev2 can't actually help
     assert dev2.discharge_calls == []  # SOCEMPTY is never started
+
+
+async def test_balancing_pulls_highest_soc_device_out_of_bypass() -> None:
+    """Bypass exit on balancing (28.10.2026): when the solar pass-through does
+    not cover the demand and the SoC spread is wide, the HIGHEST-SoC bypassing
+    device becomes dispatchable — discharging it pulls the group together.
+    The command carries pwr + pwr_bypass, so the device can exit bypass.
+    """
+    manager = _make_manager_harness()
+    dev_hi = _FakeDevice(pwr_max=1200, electric_level=90)
+    dev_hi.byPass = SimpleNamespace(asInt=1)
+    dev_hi.pwr_produced = -50
+    dev_lo = _FakeDevice(pwr_max=1200, electric_level=60)
+    dev_lo.pwr_produced = -50
+
+    manager.discharge = [dev_hi, dev_lo]
+    manager.discharge_weight = dev_hi.pwr_max * 90 + dev_lo.pwr_max * 60
+    manager.discharge_produced = 100  # 50+50 solar pass-through
+
+    await manager.power_discharge(300)  # demand 300 W > solar 100 W
+
+    assert dev_hi.discharge_calls and dev_hi.discharge_calls[-1] > 0  # pulled out of bypass
+    assert dev_lo.discharge_calls[-1] > 0  # peer still serves its share
+
+
+async def test_balancing_keeps_lower_soc_bypassing_device_excluded() -> None:
+    """The exit gate names only the HIGHEST-SoC device: a bypassing device
+    below the top stays excluded, the non-bypassing top serves the budget."""
+    manager = _make_manager_harness()
+    dev_top = _FakeDevice(pwr_max=1200, electric_level=90)  # not bypassing
+    dev_top.pwr_produced = -50
+    dev_byp = _FakeDevice(pwr_max=1200, electric_level=60)
+    dev_byp.byPass = SimpleNamespace(asInt=1)
+    dev_byp.pwr_produced = -50
+
+    manager.discharge = [dev_top, dev_byp]
+    manager.discharge_weight = 1200 * 90 + 1200 * 60
+    manager.discharge_produced = 100
+
+    await manager.power_discharge(300)
+
+    assert dev_byp.discharge_calls == [0]  # stays excluded
+    assert dev_top.discharge_calls and dev_top.discharge_calls[-1] > 0
