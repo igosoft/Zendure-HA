@@ -814,7 +814,19 @@ class ZendureManager(DataUpdateCoordinator[None], EntityDevice, ZendureBalancing
         )
 
         def dispatchable(d: ZendureDevice) -> int:
-            return capacity(d) if no_alternative or d.byPass.asInt == 0 else 0
+            if no_alternative or d.byPass.asInt == 0:
+                return capacity(d)
+            # Exit bypass mode if the setpoint exceeds the solar production of all devices 
+            # This prevents a device from being stuck in bypass mode when other device can cover the house needs
+            solar = sum(max(0, -x.pwr_produced - x.pwr_bypass) for x in self.discharge)
+            if (
+                d.state != DeviceState.SOCFULL
+                and setpoint > solar
+                and not self._soc_close(self.discharge)
+                and d.electricLevel.asInt == max(x.electricLevel.asInt for x in self.discharge)
+            ):
+                return capacity(d)
+            return 0
 
         dispatch_limit = sum(dispatchable(d) for d in self.discharge)
         dispatch_produced = max(0, self.discharge_produced - self.discharge_bypass)
