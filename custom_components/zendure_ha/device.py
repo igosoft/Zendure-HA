@@ -7,6 +7,7 @@ import json
 import logging
 import traceback
 from dataclasses import dataclass
+from collections.abc import Callable
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -28,7 +29,7 @@ from paho.mqtt import client as mqtt_client
 
 from .binary_sensor import ZendureBinarySensor
 from .button import ZendureButton
-from .const import DeviceState, PowerFlowDirection, SmartMode
+from .const import AcMode, DeviceState, PowerFlowDirection, SmartMode
 from .entity import EntityDevice, EntityZendure
 from .number import ZendureNumber
 from .select import ZendureRestoreSelect, ZendureSelect
@@ -110,6 +111,9 @@ class ZendureBattery(EntityDevice):
 class ZendureDevice(EntityDevice):
     """Zendure Device class for devices integration."""
 
+    # Called when the device reports a battery pack it did not have before.
+    onBatteryAdded: Callable[[], None] | None = None
+
     def __init__(self, hass: HomeAssistant, deviceId: str, name: str, model: str, definition: dict[str, str], parent: str | None = None) -> None:
         """Initialize Device."""
         from .fusegroup import FuseGroup
@@ -178,7 +182,7 @@ class ZendureDevice(EntityDevice):
             9: "group5000",
         }
         self.fuseGroup = ZendureRestoreSelect(self, "fuseGroup", fuseGroups, None)
-        self.acMode = ZendureSelect(self, "acMode", {1: "input", 2: "output"}, self.entityWrite, 1)
+        self.acMode = ZendureSelect(self, "acMode", {AcMode.INPUT: "input", AcMode.OUTPUT: "output"}, self.entityWrite, AcMode.INPUT)
         self.electricLevel = ZendureSensor(self, "electricLevel", None, "%", "battery", "measurement")
         # set homeInput to 0 for devices, which have no AC charge capability
         self.homeInput = ZendureSensor(self, "gridInputPower", None, "W", "power", "measurement", state = 0)
@@ -389,6 +393,8 @@ class ZendureDevice(EntityDevice):
                 if (bat := self.batteries.get(sn, None)) is None:
                     bat = ZendureBattery(self.hass, sn, self, b.get("packType"))
                     self.batteries[sn] = bat
+                    if self.onBatteryAdded is not None:
+                        self.onBatteryAdded()
 
                 # Always apply properties — including for newly created batteries.
                 # With elif, a new battery received no entityUpdate on its first packData
@@ -667,6 +673,10 @@ class ZendureDevice(EntityDevice):
         except Exception as err:
             _LOGGER.warning("BLE error: %s", err)
 
+    def _no_capacity(self) -> bool:
+        """No battery capacity known: the device cannot be dispatched."""
+        return self.kWh == 0 and not self.batteries
+
     async def power_get(self) -> bool:
         if self.lastseen < datetime.now():
             self.lastseen = datetime.min
@@ -674,7 +684,7 @@ class ZendureDevice(EntityDevice):
 
         self.actualKwh = self.availableKwh.asNumber
 
-        if not self.online or self.socSet.asNumber == 0 or (self.kWh == 0 and not self.batteries):
+        if not self.online or self.socSet.asNumber == 0 or self._no_capacity():
             self.state = DeviceState.OFFLINE
         elif self.socLimit.asInt == SmartMode.SOCFULL or self.electricLevel.asInt >= self.socSet.asNumber:
             self.state = DeviceState.SOCFULL
@@ -730,12 +740,48 @@ class ZendureDevice(EntityDevice):
 class ZendureLegacy(ZendureDevice):
     """Zendure Legacy class for devices."""
 
+    # Paired to a Hub that owns the battery (ACE 1500): zero capacity is normal for it.
+    paired: bool = False
+    _ac_charge: bool = False
+
+    def _no_capacity(self) -> bool:
+        return super()._no_capacity() and not self.paired
+
+    def setAcMode(self, mode: int) -> None:
+        """Set the device AC mode"""
+        if self.acMode.value != mode:
+            self._messageid += 1
+            self.mqttPublish(self.topic_write, {"properties": {"acMode": mode}})
+
+    @property
+    def ac_charge(self) -> bool:
+        return self._ac_charge
+
+    @ac_charge.setter
+    def ac_charge(self, value: bool) -> None:
+        self._ac_charge = value
+        self.setAcMode(AcMode.INPUT if value else AcMode.OUTPUT)
+
     def __init__(self, hass: HomeAssistant, deviceId: str, name: str, model: str, definition: dict[str, str], parent: str | None = None) -> None:
         """Initialize Device."""
         super().__init__(hass, deviceId, name, model, definition, parent)
         self.connection = ZendureRestoreSelect(self, "connection", {0: "cloud", 1: "local"}, self.mqttSelect, 0)
         self.mqttReset = ZendureButton(self, "mqttReset", self.button_press)
         self.bleAdapter = ZendureRestoreSelect(self, "bleAdapter", self.ble_adapter_options(), self.bleAdapterSelect, 0)
+        self.onBatteryAdded = self.pairAces
+
+    def pairAces(self) -> None:
+        """Give each ACE 1500 the HUB that reports its battery packs."""
+        from .api import Api  # noqa: PLC0415 (circular import)
+        from .devices.ace1500 import ACE1500  # noqa: PLC0415 (circular import)
+
+        hubs = [d for d in Api.devices.values() if isinstance(d, ZendureLegacy) and not isinstance(d, ACE1500)]
+        for ace in Api.devices.values():
+            if isinstance(ace, ACE1500):
+                hub = next((h for h in hubs if h.batteries.keys() & ace.batteries.keys()), None)
+                if hub is not None and hub is not ace.pairedHub:
+                    _LOGGER.info("%s and HUB %s have been paired", ace.name, hub.name)
+                ace.pairedHub = hub
 
     async def bleAdapterSelect(self, _select: ZendureRestoreSelect, _value: Any) -> None:
         # Refresh available sources whenever selection changes or is restored.
@@ -823,7 +869,7 @@ class ZendureZenSdk(ZendureDevice):
         if power == -SmartMode.POWER_START and self.limitInput.asInt >= SmartMode.POWER_START and self.homeInput.asInt == 0:
             power = -min(self.limitInput.asInt + 4, 2 * SmartMode.POWER_START)
             _LOGGER.debug("%s => Power charge kickstart %s", self.name, power)
-        await self.doCommand({"properties": {"smartMode": 0 if power == 0 and self.pwr_offgrid == 0 else 1, "acMode": 1, "outputLimit": 0, "inputLimit": -power}})
+        await self.doCommand({"properties": {"smartMode": 0 if power == 0 and self.pwr_offgrid == 0 else 1, "acMode": AcMode.INPUT, "outputLimit": 0, "inputLimit": -power}})
         return power
 
     async def discharge(self, power: int) -> int:
@@ -831,12 +877,12 @@ class ZendureZenSdk(ZendureDevice):
         if power == SmartMode.POWER_START and self.limitOutput.asInt >= SmartMode.POWER_START and self.homeOutput.asInt == 0:
             power = min(self.limitOutput.asInt + 4, 2 * SmartMode.POWER_START)
             _LOGGER.debug("%s => Power discharge kickstart %sW (SoC %s%%)", self.name, power, self.electricLevel.asInt)
-        await self.doCommand({"properties": {"smartMode": 0 if power == 0 and self.pwr_offgrid == 0 else 1, "acMode": 2, "outputLimit": power, "inputLimit": 0}})
+        await self.doCommand({"properties": {"smartMode": 0 if power == 0 and self.pwr_offgrid == 0 else 1, "acMode": AcMode.OUTPUT, "outputLimit": power, "inputLimit": 0}})
         return power
 
     async def power_off(self) -> None:
         """Set the power off."""
-        await self.doCommand({"properties": {"smartMode": 0 if self.pwr_offgrid == 0 else 1, "acMode": 2, "outputLimit": 0, "inputLimit": 0}})
+        await self.doCommand({"properties": {"smartMode": 0 if self.pwr_offgrid == 0 else 1, "acMode": AcMode.OUTPUT, "outputLimit": 0, "inputLimit": 0}})
 
     async def doCommand(self, command: Any) -> None:
         if self.connection.value != 0:
